@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+data
+dashboard/.next
+dashboard/.next-local
+.next-dashboard
+.git
+.trae
+*.log

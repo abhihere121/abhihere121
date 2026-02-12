@@ -1,0 +1,16 @@
+{
+  "founder_weekly_whatsapp": {
+    "name": "founder_weekly_whatsapp",
+    "language": "en",
+    "category": "UTILITY",
+    "content": "📦 SizeSignal Weekly Report — {{brand_name}}\nWeek of {{week_range}}\n\n🔴 TOP MISSED SALES THIS WEEK:\n{{top_rows}}\n\n💡 This week you missed ₹{{missed_total}} in potential revenue due to out-of-stock variants.\nReply RESTOCK to send supplier alerts automatically.",
+    "variables": ["brand_name", "week_range", "top_rows", "missed_total"]
+  },
+  "customer_restock_alert": {
+    "name": "customer_restock_alert",
+    "language": "en",
+    "category": "MARKETING",
+    "content": "Hi {{name}}! The {{product_title}} {{variant_title}} you wanted is back in stock.\nShop now → {{product_url}}",
+    "variables": ["name", "product_title", "variant_title", "product_url"]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "sizesignal-mvp",
+  "version": "1.0.0",
+  "description": "Local MVP for SizeSignal - Out of Stock Demand Capture",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --dns-result-order=ipv4first server.js",
+    "migrate": "node --dns-result-order=ipv4first scripts/migrate.js",
+    "e2e": "node --dns-result-order=ipv4first scripts/e2e.js",
+    "smoke": "node --dns-result-order=ipv4first scripts/smoke-enterprise.js",
+    "e2e:enterprise": "node --dns-result-order=ipv4first scripts/e2e-enterprise-lite.js",
+    "dashboard:dev": "node node_modules/next/dist/bin/next dev dashboard -p 3002",
+    "dashboard:build": "node node_modules/next/dist/bin/next build dashboard",
+    "dashboard:start": "node node_modules/next/dist/bin/next start dashboard -p 3002"
+  },
+  "dependencies": {
+    "@shopify/polaris": "^13.9.5",
+    "dotenv": "^16.6.1",
+    "pg": "^8.13.1",
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "next": "^14.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

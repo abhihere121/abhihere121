@@ -1,0 +1,15 @@
+name = "sizesignal"
+application_url = "https://YOUR_TUNNEL_URL"
+embedded = true
+
+[access_scopes]
+scopes = "read_products,read_inventory,write_script_tags,write_webhooks"
+
+[auth]
+redirect_urls = [
+  "https://YOUR_TUNNEL_URL/auth/callback"
+]
+
+[webhooks]
+api_version = "2025-01"
+

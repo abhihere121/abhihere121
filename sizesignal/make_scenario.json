@@ -1,0 +1,144 @@
+{
+  "scenarios": {
+    "capture_notify_intent": {
+      "trigger": {
+        "type": "http_webhook",
+        "url": "https://YOUR_MAKE_WEBHOOK_URL"
+      },
+      "actions": [
+        {
+          "type": "google_sheets_append_row",
+          "spreadsheet_id": "YOUR_SHEET_ID",
+          "sheet_name": "Events",
+          "mapping": {
+            "timestamp": "{{timestamp}}",
+            "event": "{{event}}",
+            "page_url": "{{page_url}}",
+            "product_id": "{{product_id}}",
+            "product_handle": "{{product_handle}}",
+            "variant_id": "{{variant_id}}",
+            "size_option": "{{size_option}}",
+            "available": "FALSE",
+            "repeat_count": "",
+            "dwell_ms": "",
+            "whatsapp": "{{whatsapp}}",
+            "email": "{{email}}",
+            "aov": "{{aov}}",
+            "user_agent": "{{user_agent}}",
+            "source": "widget"
+          }
+        }
+      ]
+    },
+    "track_events": {
+      "trigger": {
+        "type": "http_webhook",
+        "url": "https://YOUR_MAKE_WEBHOOK_URL"
+      },
+      "actions": [
+        {
+          "type": "google_sheets_append_row",
+          "spreadsheet_id": "YOUR_SHEET_ID",
+          "sheet_name": "Events",
+          "mapping": {
+            "timestamp": "{{timestamp}}",
+            "event": "{{event}}",
+            "page_url": "{{page_url}}",
+            "product_id": "{{product_id}}",
+            "product_handle": "{{product_handle}}",
+            "variant_id": "{{variant_id}}",
+            "size_option": "{{size_option}}",
+            "available": "{{available}}",
+            "repeat_count": "{{repeat_count}}",
+            "dwell_ms": "{{dwell_ms}}",
+            "whatsapp": "",
+            "email": "",
+            "aov": "{{aov}}",
+            "user_agent": "{{user_agent}}",
+            "source": "tracking"
+          }
+        }
+      ]
+    },
+    "weekly_report": {
+      "trigger": {
+        "type": "schedule",
+        "cron": "0 8 * * MON",
+        "timezone": "Asia/Kolkata"
+      },
+      "steps": [
+        {
+          "type": "google_sheets_query",
+          "spreadsheet_id": "YOUR_SHEET_ID",
+          "sheet_name": "Events",
+          "query": "weekly_summary"
+        },
+        {
+          "type": "formatter_build_message",
+          "template_id": "founder_weekly_whatsapp"
+        },
+        {
+          "type": "wati_send_template",
+          "api_key": "WATI_API_KEY",
+          "phone": "FOUNDER_PHONE",
+          "template_id": "founder_weekly_whatsapp",
+          "variables": {
+            "brand_name": "{{brand_name}}",
+            "week_range": "{{week_range}}",
+            "top_rows": "{{top_rows}}",
+            "missed_total": "{{missed_total}}"
+          }
+        }
+      ]
+    },
+    "restock_trigger": {
+      "trigger": {
+        "type": "google_sheets_watch",
+        "spreadsheet_id": "YOUR_SHEET_ID",
+        "sheet_name": "Restock",
+        "condition": "status='RESTOCKED'"
+      },
+      "steps": [
+        {
+          "type": "google_sheets_query",
+          "spreadsheet_id": "YOUR_SHEET_ID",
+          "sheet_name": "Waitlist",
+          "filter": "variant_id={{variant_id}}"
+        },
+        {
+          "type": "wati_broadcast",
+          "api_key": "WATI_API_KEY",
+          "template_id": "customer_restock_alert",
+          "list": "{{phone_list}}",
+          "variables": {
+            "product_title": "{{product_title}}",
+            "variant_title": "{{size_option}}",
+            "product_url": "{{product_url}}"
+          }
+        },
+        {
+          "type": "google_sheets_append_row",
+          "spreadsheet_id": "YOUR_SHEET_ID",
+          "sheet_name": "Events",
+          "mapping": {
+            "timestamp": "{{now}}",
+            "event": "restock_broadcast",
+            "page_url": "",
+            "product_id": "{{product_id}}",
+            "product_handle": "{{product_handle}}",
+            "variant_id": "{{variant_id}}",
+            "size_option": "{{size_option}}",
+            "available": "TRUE",
+            "repeat_count": "",
+            "dwell_ms": "",
+            "whatsapp": "",
+            "email": "",
+            "aov": "",
+            "user_agent": "",
+            "source": "automation"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+data/
+.env
+.env.*
+
+dashboard/.next/
+dashboard/.next-local/
+.next-dashboard/
+
+*.log
+npm-debug.log*
+
+.DS_Store

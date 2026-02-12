@@ -1,0 +1,20 @@
+📦 SizeSignal Weekly Report — {{brand_name}}
+Week of {{week_range}}
+
+🔴 TOP MISSED SALES THIS WEEK:
+1. {{top1_title}} — {{top1_size}}
+   👀 {{top1_visits}} visits | {{top1_notify}} Notify Me | ₹{{top1_missed}} missed revenue
+   → Restock: {{top1_units}} units recommended
+
+2. {{top2_title}} — {{top2_size}}
+   👀 {{top2_visits}} visits | {{top2_notify}} Notify Me | ₹{{top2_missed}} missed revenue
+   → Restock: {{top2_units}} units recommended
+
+3. {{top3_title}} — {{top3_size}}
+   👀 {{top3_visits}} visits | {{top3_notify}} Notify Me | ₹{{top3_missed}} missed revenue
+   → Restock: {{top3_units}} units recommended
+
+💡 This week you missed ₹{{missed_total}} in potential revenue
+   due to {{oos_count}} out-of-stock variants.
+
+Reply RESTOCK to send supplier alerts automatically.

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Floral Kurta - SizeSignal Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .product-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .product-image {
+            width: 100%;
+            height: 300px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #757575;
+        }
+        .product-title {
+            font-size: 1.5rem;
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+        .product-price {
+            font-size: 1.25rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        .variant-selector {
+            margin-bottom: 1.5rem;
+        }
+        .variant-selector label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: white;
+        }
+        .add-to-cart {
+            width: 100%;
+            padding: 1rem;
+            background-color: #000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .add-to-cart:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .add-to-cart:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        /* Widget Styles (Simulating what notify_me.liquid would output) */
+        .size-signal-widget {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            display: none; /* Hidden by default */
+        }
+        .size-signal-widget.visible {
+            display: block;
+        }
+        .size-signal-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #d32f2f;
+        }
+        .size-signal-input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .size-signal-submit {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .size-signal-success {
+            color: #2e7d32;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .ss-widget{margin-top:16px}
+        .ss-card{border:1px solid #e5e7eb;border-radius:8px;padding:12px;background:#fff}
+        .ss-title{font-weight:600;margin-bottom:8px}
+        .ss-field{margin-bottom:8px}
+        .ss-label{display:block;font-size:14px;margin-bottom:4px}
+        .ss-button{display:inline-block;background:#111;color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
+        .ss-button:hover{opacity:.9}
+        .ss-status{margin-top:8px;font-size:13px}
+    </style>
+</head>
+<body>
+
+<div class="product-card">
+    <div class="product-image">Product Image Placeholder</div>
+    <h1 class="product-title">Red Floral Kurta</h1>
+    <div class="product-price">₹1,499.00</div>
+
+    <div class="variant-selector">
+        <label for="variant-select">Select Size</label>
+        <select id="variant-select" name="id">
+            <option value="4001">Size S</option>
+            <option value="4002">Size M</option>
+            <option value="4003">Size L</option>
+            <option value="4004">Size XL</option>
+        </select>
+    </div>
+
+    <button id="add-to-cart-btn" class="add-to-cart">Add to Cart</button>
+
+    <div id="size-signal-widget" class="ss-widget" style="display:none;">
+        <div class="ss-card">
+            <div class="ss-title">Notify me when this size is back</div>
+            <form id="ss-notify-form">
+                <input type="hidden" name="product_id" value="123456789">
+                <input type="hidden" name="product_handle" value="red-floral-kurta">
+                <input type="hidden" name="variant_id" id="ss-variant-id" value="4001">
+                <input type="hidden" name="size_option" id="ss-size-option" value="">
+                <div class="ss-field">
+                    <label class="ss-label">WhatsApp number</label>
+                    <input type="tel" name="whatsapp" id="ss-whatsapp" placeholder="+91XXXXXXXXXX" required>
+                </div>
+                <div class="ss-field">
+                    <label class="ss-label">Email (optional)</label>
+                    <input type="email" name="email" id="ss-email" placeholder="you@brand.com">
+                </div>
+                <div class="ss-consent">
+                    <input type="checkbox" id="ss-consent" name="consent" required>
+                    <label for="ss-consent">I agree to receive updates on WhatsApp/email for this product variant.</label>
+                </div>
+                <button type="submit" class="ss-button">Notify Me</button>
+                <div id="ss-status" class="ss-status" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mock Shopify Objects for JS -->
+<script>
+    window.Shopify = {
+        currency: { active: 'INR' },
+        shop: 'demo-store.myshopify.com'
+    };
+    
+    window.SizeSignalProduct = {
+        id: 123456789,
+        handle: "red-floral-kurta",
+        aov: 1499,
+        variants: [
+            { id: 4001, title: "Size S", available: true, option1: "S", option2: "", option3: "" },
+            { id: 4002, title: "Size M", available: false, option1: "M", option2: "", option3: "" },
+            { id: 4003, title: "Size L", available: true, option1: "L", option2: "", option3: "" },
+            { id: 4004, title: "Size XL", available: false, option1: "XL", option2: "", option3: "" }
+        ]
+    };
+
+    const select = document.getElementById('variant-select');
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+
+    select.addEventListener('change', (e) => {
+        const variantId = parseInt(e.target.value);
+        const variant = window.SizeSignalProduct.variants.find(v => v.id === variantId);
+        
+        if (variant.available) {
+            addToCartBtn.disabled = false;
+            addToCartBtn.textContent = 'Add to Cart';
+        } else {
+            addToCartBtn.disabled = true;
+            addToCartBtn.textContent = 'Out of Stock';
+        }
+    });
+</script>
+
+<!-- Load Client Scripts -->
+<script src="/sizesignal/size-signal.tracking.js"></script>
+<script src="/sizesignal/size-signal.widget.js"></script>
+
+</body>
+</html>

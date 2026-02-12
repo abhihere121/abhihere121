@@ -1,0 +1,59 @@
+<div id="size-signal-widget" class="ss-widget" style="display:none;">
+  <div class="ss-card">
+    <div class="ss-title">Notify me when this size is back</div>
+    <form id="ss-notify-form">
+      <input type="hidden" name="product_id" value="{{ product.id }}">
+      <input type="hidden" name="product_handle" value="{{ product.handle }}">
+      <input type="hidden" name="variant_id" id="ss-variant-id" value="{{ product.selected_or_first_available_variant.id }}">
+      <input type="hidden" name="size_option" id="ss-size-option" value="">
+      <div class="ss-field">
+        <label class="ss-label">WhatsApp number</label>
+        <input type="tel" name="whatsapp" id="ss-whatsapp" placeholder="+91XXXXXXXXXX" required>
+      </div>
+      <div class="ss-field">
+        <label class="ss-label">Email (optional)</label>
+        <input type="email" name="email" id="ss-email" placeholder="you@brand.com">
+      </div>
+      <div class="ss-consent">
+        <input type="checkbox" id="ss-consent" name="consent" required>
+        <label for="ss-consent">I agree to receive updates on WhatsApp/email for this product variant.</label>
+      </div>
+      <button type="submit" class="ss-button">Notify Me</button>
+      <div id="ss-status" class="ss-status" aria-live="polite"></div>
+    </form>
+  </div>
+</div>
+
+<style>
+.ss-widget{margin-top:16px}
+.ss-card{border:1px solid #e5e7eb;border-radius:8px;padding:12px;background:#fff}
+.ss-title{font-weight:600;margin-bottom:8px}
+.ss-field{margin-bottom:8px}
+.ss-label{display:block;font-size:14px;margin-bottom:4px}
+.ss-button{display:inline-block;background:#111;color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
+.ss-button:hover{opacity:.9}
+.ss-status{margin-top:8px;font-size:13px}
+</style>
+
+<script>
+  window.SizeSignalProduct = {
+    id: {{ product.id }},
+    handle: "{{ product.handle }}",
+    aov: {{ cart.total_price | default: 0 | divided_by: 100 | default: 0 }},
+    variants: [
+      {% for v in product.variants %}
+      {
+        id: {{ v.id }},
+        title: "{{ v.title | escape }}",
+        available: {{ v.available }},
+        option1: "{{ v.option1 | escape }}",
+        option2: "{{ v.option2 | escape }}",
+        option3: "{{ v.option3 | escape }}"
+      }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  };
+</script>
+
+<script src="{{ 'size-signal.widget.js' | asset_url }}" defer></script>
+<script src="{{ 'size-signal.tracking.js' | asset_url }}" defer></script>

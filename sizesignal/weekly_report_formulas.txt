@@ -1,0 +1,5 @@
+VISITS_QUERY=QUERY(Events!A:P,"select F, G, count(F) where B='oos_visit' and A>=date '[WEEK_START]' and A<=date '[WEEK_END]' group by F,G label count(F) ''",0)
+NOTIFY_QUERY=QUERY(Events!A:P,"select F, G, count(F) where B='notify_intent' and A>=date '[WEEK_START]' and A<=date '[WEEK_END]' group by F,G label count(F) ''",0)
+AOV_QUERY=QUERY(Events!A:P,"select avg(N) where B='oos_visit' and A>=date '[WEEK_START]' and A<=date '[WEEK_END]' label avg(N) ''",0)
+MISSED_REVENUE=ARRAYFORMULA(IFERROR(INDEX(VISITS_RANGE,ROW(A1)) * INDEX(AOV_RANGE,1,1),0))
+RESTOCK_UNITS=ARRAYFORMULA(IFERROR(INDEX(NOTIFY_RANGE,ROW(A1)) * 2.5,0))
