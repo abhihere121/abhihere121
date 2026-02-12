@@ -15,9 +15,11 @@ export function AppFrame({ children }) {
         <Navigation location={location}>
           <Navigation.Section
             items={[
-              { label: "Overview", url: `${basePath}` },
+              { label: "Home", url: `${basePath}` },
+              { label: "Products", url: `${basePath}/products` },
               { label: "Reports", url: `${basePath}/reports` },
-              { label: "Widget", url: `${basePath}/widget` }
+              { label: "Widget", url: `${basePath}/widget` },
+              { label: "Settings", url: `${basePath}/settings` }
             ]}
           />
         </Navigation>

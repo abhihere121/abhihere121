@@ -21,14 +21,14 @@ async function logWebhook({ pool, storeId, topic, shopDomain, webhookId, payload
   );
 }
 
-async function upsertProduct({ pool, storeId, shopifyProductId, handle, title }) {
+async function upsertProduct({ pool, storeId, shopifyProductId, handle, title, vendor }) {
   const q = `
-    INSERT INTO products(store_id, shopify_product_id, handle, title)
-    VALUES ($1,$2,$3,$4)
+    INSERT INTO products(store_id, shopify_product_id, handle, title, vendor)
+    VALUES ($1,$2,$3,$4,$5)
     ON CONFLICT (store_id, shopify_product_id)
-    DO UPDATE SET handle = EXCLUDED.handle, title = EXCLUDED.title, updated_at = now()
+    DO UPDATE SET handle = EXCLUDED.handle, title = EXCLUDED.title, vendor = EXCLUDED.vendor, updated_at = now()
     RETURNING *`;
-  const r = await pool.query(q, [storeId, shopifyProductId, handle || "", title || ""]);
+  const r = await pool.query(q, [storeId, shopifyProductId, handle || "", title || "", vendor || ""]);
   return r.rows[0];
 }
 
@@ -142,7 +142,7 @@ async function getVariantByInventoryItem({ pool, storeId, inventoryItemId }) {
   return r.rows[0] || null;
 }
 
-async function upsertInventoryLevel({ pool, storeId, inventoryItemId, locationId, available }) {
+async function upsertInventoryLevel({ pool, storeId, inventoryItemId, locationId, available, inventoryUpdatedAt }) {
   const prev = await pool.query(
     "SELECT available FROM inventory_levels WHERE store_id = $1 AND inventory_item_id = $2 AND location_id = $3",
     [storeId, inventoryItemId, locationId]
@@ -150,12 +150,18 @@ async function upsertInventoryLevel({ pool, storeId, inventoryItemId, locationId
   const prevAvailable = prev.rows[0]?.available ?? null;
 
   const q = `
-    INSERT INTO inventory_levels(store_id, inventory_item_id, location_id, available)
-    VALUES ($1,$2,$3,$4)
+    INSERT INTO inventory_levels(store_id, inventory_item_id, location_id, available, inventory_updated_at)
+    VALUES ($1,$2,$3,$4,$5)
     ON CONFLICT (store_id, inventory_item_id, location_id)
-    DO UPDATE SET available = EXCLUDED.available, updated_at = now()
+    DO UPDATE SET available = EXCLUDED.available, inventory_updated_at = EXCLUDED.inventory_updated_at, updated_at = now()
     RETURNING *`;
-  const r = await pool.query(q, [storeId, inventoryItemId, locationId, available]);
+  const r = await pool.query(q, [
+    storeId,
+    inventoryItemId,
+    locationId,
+    available,
+    inventoryUpdatedAt ? new Date(inventoryUpdatedAt).toISOString() : null
+  ]);
   return { prevAvailable, row: r.rows[0] };
 }
 

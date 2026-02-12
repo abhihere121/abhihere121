@@ -12,8 +12,7 @@ import {
   InlineStack,
   Layout,
   Page,
-  Text,
-  TextField
+  Text
 } from "@shopify/polaris";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -83,6 +82,7 @@ export function OverviewPage() {
   const [syncResult, setSyncResult] = useState(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const apiBase = useMemo(() => (typeof window !== "undefined" ? window.location.origin : ""), []);
+  const basePath = "/app";
   const searchParams = useSearchParams();
   const shopFromUrl = searchParams.get("shop") || "";
 
@@ -127,21 +127,49 @@ export function OverviewPage() {
   }, [data]);
 
   const kpis = data?.ok ? data.kpis : null;
+  const inventory = data?.ok ? data.inventory : null;
   const demandRows = data?.ok ? data.demandByVariant || [] : [];
   const highRiskRows = data?.ok ? data.highRisk || [] : [];
+  const restockSuggestionsByVendor = data?.ok ? data.restockSuggestionsByVendor || [] : [];
+
+  const fmtTs = (iso) => {
+    const v = String(iso || "");
+    if (!v) return "—";
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString();
+  };
 
   const tableRows = highRiskRows.map((r) => [
-    r.productTitle,
-    r.size,
+    <Button
+      key={`${r.productHandle || r.productTitle}-${r.size || ""}`}
+      url={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
+      plain
+    >
+      {r.productTitle}
+    </Button>,
+    r.vendor || "—",
+    r.size ? `Size ${r.size}` : "—",
     String(r.demandCount),
     `₹${formatRsFromPaise(r.missedRevenuePaise)}`,
-    String(Math.max(0, Math.round((r.demandCount || 0) * 0.35))),
-    "—"
+    String(Number.isFinite(Number(r.availableUnits)) ? r.availableUnits : 0),
+    fmtTs(r.lastInventoryUpdatedAt),
+    String(Number.isFinite(Number(r.suggestedUnits)) ? r.suggestedUnits : Math.max(0, Math.round((r.demandCount || 0) * 0.35))),
+    <Button
+      key={`view-${r.productHandle || r.productTitle}-${r.size || ""}`}
+      url={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
+      plain
+    >
+      View
+    </Button>
   ]);
 
   const installed = Boolean(status?.ok && status?.installed);
   const installUrl = `${apiBase}/auth?shop=${encodeURIComponent(shop)}`;
   const counts = status?.ok && status?.counts ? status.counts : null;
+  const widgetEnabled = Boolean(status?.ok && status?.widget?.enabled);
+  const freshness = status?.ok ? status.freshness || null : null;
+  const hasProducts = Boolean(counts?.products_count && Number(counts.products_count) > 0);
 
   const runSync = async () => {
     setSyncing(true);
@@ -171,60 +199,153 @@ export function OverviewPage() {
     >
       <Layout>
         <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
-                <TextField
-                  label="Shop domain"
-                  value={shop}
-                  onChange={setShop}
-                  autoComplete="off"
-                  helpText="Use the exact *.myshopify.com domain installed via /auth"
-                />
-                <Box paddingBlockStart={{ xs: "0", md: "600" }}>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    API: {apiBase}
+          <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">
+                  Get started now
+                </Text>
+                <Divider />
+                <BlockStack gap="300">
+                  <InlineStack align="space-between" blockAlign="center" gap="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Badge tone={installed ? "success" : "critical"}>{installed ? "Done" : "Todo"}</Badge>
+                      <Text as="p" variant="bodyMd">
+                        1. Install app
+                      </Text>
+                    </InlineStack>
+                    {!installed ? (
+                      <Button url={installUrl} external>
+                        Install
+                      </Button>
+                    ) : null}
+                  </InlineStack>
+
+                  <InlineStack align="space-between" blockAlign="center" gap="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Badge tone={hasProducts ? "success" : "critical"}>{hasProducts ? "Done" : "Todo"}</Badge>
+                      <Text as="p" variant="bodyMd">
+                        2. Sync products
+                      </Text>
+                    </InlineStack>
+                    {installed && !hasProducts ? (
+                      <Button onClick={runSync} disabled={syncing}>
+                        {syncing ? "Syncing…" : "Sync now"}
+                      </Button>
+                    ) : null}
+                  </InlineStack>
+
+                  <InlineStack align="space-between" blockAlign="center" gap="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Badge tone={widgetEnabled ? "success" : "critical"}>{widgetEnabled ? "Done" : "Todo"}</Badge>
+                      <Text as="p" variant="bodyMd">
+                        3. Setup widget
+                      </Text>
+                    </InlineStack>
+                    {installed ? (
+                      <Button url={`${basePath}/widget?shop=${encodeURIComponent(shop)}`} plain>
+                        Open
+                      </Button>
+                    ) : null}
+                  </InlineStack>
+
+                  <InlineStack align="space-between" blockAlign="center" gap="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Badge tone="info">Soon</Badge>
+                      <Text as="p" variant="bodyMd">
+                        4. Schedule reports
+                      </Text>
+                    </InlineStack>
+                  </InlineStack>
+
+                  <InlineStack align="space-between" blockAlign="center" gap="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Badge tone="info">Soon</Badge>
+                      <Text as="p" variant="bodyMd">
+                        5. Invite teammates
+                      </Text>
+                    </InlineStack>
+                  </InlineStack>
+                </BlockStack>
+                {syncResult?.error ? (
+                  <Text as="p" variant="bodySm" tone="critical">
+                    Sync error: {syncResult.error}
                   </Text>
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    Status: {loading ? "Loading…" : installed ? "Installed" : "Not installed"}
+                ) : null}
+              </BlockStack>
+            </Card>
+
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">
+                  Store status
+                </Text>
+                <Divider />
+                <BlockStack gap="200">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text as="p" variant="bodyMd" fontWeight="medium">
+                      Shopify store
+                    </Text>
+                    <Button url={`${basePath}/settings`} plain>
+                      Edit
+                    </Button>
+                  </InlineStack>
+                  <Text as="p" variant="bodyMd">
+                    {shop || "—"}
                   </Text>
-                  {installed && counts ? (
+
+                  <InlineStack gap="200" blockAlign="center">
+                    <Badge tone={installed ? "success" : "critical"}>{installed ? "Installed" : "Not installed"}</Badge>
+                    <Badge tone={widgetEnabled ? "success" : "attention"}>{widgetEnabled ? "Widget on" : "Widget off"}</Badge>
+                  </InlineStack>
+
+                  {counts ? (
                     <Text as="p" variant="bodySm" tone="subdued">
-                      Data: {counts.products_count} products · {counts.variants_count} variants · {counts.demand_events_count} events ·{" "}
-                      {counts.webhooks_count} webhooks
+                      {counts.products_count} products · {counts.variants_count} variants · {counts.demand_events_count} events
                     </Text>
                   ) : null}
-                </Box>
-              </InlineGrid>
-              {!installed ? (
-                <InlineStack gap="200" align="start" blockAlign="center">
-                  <Text as="p" variant="bodyMd">
-                    Install the app for this shop to see real data.
-                  </Text>
-                  <Button url={installUrl} external>
-                    Install now
-                  </Button>
-                </InlineStack>
-              ) : (
-                <InlineStack gap="200" align="start" blockAlign="center">
-                  <Button onClick={runSync} disabled={syncing}>
-                    {syncing ? "Syncing…" : "Sync now"}
-                  </Button>
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    {syncResult?.ok
-                      ? `Synced: ${syncResult.productsUpserted} products, ${syncResult.variantsUpserted} variants`
-                      : syncResult?.error
-                        ? `Sync error: ${syncResult.error}`
-                        : "Pull products/variants into the database."}
-                  </Text>
-                </InlineStack>
-              )}
-            </BlockStack>
-          </Card>
+
+                  <Divider />
+                  <BlockStack gap="150">
+                    <InlineStack align="space-between">
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Inventory last update
+                      </Text>
+                      <Text as="p" variant="bodySm">
+                        {fmtTs(freshness?.lastInventoryUpdatedAt)}
+                      </Text>
+                    </InlineStack>
+                    <InlineStack align="space-between">
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Webhook last received
+                      </Text>
+                      <Text as="p" variant="bodySm">
+                        {fmtTs(freshness?.lastWebhookReceivedAt)}
+                      </Text>
+                    </InlineStack>
+                    <InlineStack align="space-between">
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Products last updated
+                      </Text>
+                      <Text as="p" variant="bodySm">
+                        {fmtTs(freshness?.lastProductsUpdatedAt)}
+                      </Text>
+                    </InlineStack>
+                  </BlockStack>
+
+                  <Box paddingBlockStart="200">
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Status: {loading ? "Loading…" : installed ? "Ready" : "Action required"}
+                    </Text>
+                  </Box>
+                </BlockStack>
+              </BlockStack>
+            </Card>
+          </InlineGrid>
         </Layout.Section>
 
         <Layout.Section>
-          <InlineGrid columns={{ xs: 1, sm: 2, lg: 4 }} gap="400">
+          <InlineGrid columns={{ xs: 1, sm: 2, lg: 5 }} gap="400">
             <Card>
               <BlockStack gap="200">
                 <Text as="p" variant="headingSm" tone="subdued">
@@ -291,6 +412,19 @@ export function OverviewPage() {
                 </Text>
               </BlockStack>
             </Card>
+            <Card>
+              <BlockStack gap="200">
+                <Text as="p" variant="headingSm" tone="subdued">
+                  Total Inventory
+                </Text>
+                <Text as="p" variant="heading2xl" fontWeight="bold">
+                  {inventory ? String(inventory.totalUnits || 0) : "—"}
+                </Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  {inventory?.lastInventoryUpdatedAt ? `Last update: ${fmtTs(inventory.lastInventoryUpdatedAt)}` : "Last update: —"}
+                </Text>
+              </BlockStack>
+            </Card>
           </InlineGrid>
         </Layout.Section>
 
@@ -321,21 +455,58 @@ export function OverviewPage() {
           <Card>
             <BlockStack gap="400">
               <Text as="h2" variant="headingMd">
-                High Risk Products
+                Highlighted Products
               </Text>
               <Divider />
               <DataTable
-                columnContentTypes={["text", "text", "numeric", "numeric", "numeric", "text"]}
-                headings={["Product", "Variant", "Demand", "Missed Revenue", "Suggested Units", "Action"]}
+                columnContentTypes={["text", "text", "text", "numeric", "numeric", "numeric", "text", "numeric", "text"]}
+                headings={["Product", "Vendor", "Variant", "Demand", "Missed Revenue", "Available", "Last Inventory", "Suggested Units", ""]}
                 rows={tableRows}
                 truncate
               />
-              <Text as="p" variant="bodySm" tone="subdued">
-                Actions (Generate PO / Notify Customers) will be wired next.
-              </Text>
             </BlockStack>
           </Card>
         </Layout.Section>
+
+        {restockSuggestionsByVendor.length ? (
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">
+                  Restock Suggestions
+                </Text>
+                <Divider />
+                <BlockStack gap="400">
+                  {restockSuggestionsByVendor.map((g) => (
+                    <BlockStack gap="200" key={g.vendor}>
+                      <Text as="h3" variant="headingSm">
+                        {g.vendor}
+                      </Text>
+                      <DataTable
+                        columnContentTypes={["text", "text", "numeric", "numeric", "text"]}
+                        headings={["Product", "Variant", "Demand", "Suggested Units", "Last Inventory"]}
+                        rows={(g.items || []).map((it) => [
+                          <Button
+                            key={`${g.vendor}-${it.productHandle || it.productTitle}-${it.size || ""}`}
+                            url={`${basePath}/products/${encodeURIComponent(it.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
+                            plain
+                          >
+                            {it.productTitle}
+                          </Button>,
+                          it.size ? `Size ${it.size}` : "—",
+                          String(it.demandCount || 0),
+                          String(it.suggestedUnits || 0),
+                          fmtTs(it.lastInventoryUpdatedAt)
+                        ])}
+                        truncate
+                      />
+                    </BlockStack>
+                  ))}
+                </BlockStack>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        ) : null}
       </Layout>
     </Page>
   );

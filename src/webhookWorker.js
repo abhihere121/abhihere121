@@ -12,7 +12,8 @@ async function processProductsUpdate({ pool, job }) {
     storeId,
     shopifyProductId: Number(payload.id),
     handle: payload.handle || "",
-    title: payload.title || ""
+    title: payload.title || "",
+    vendor: payload.vendor || ""
   });
 
   const variants = Array.isArray(payload.variants) ? payload.variants : [];
@@ -48,7 +49,8 @@ async function processInventoryLevelsUpdate({ pool, job }) {
     storeId,
     inventoryItemId,
     locationId,
-    available
+    available,
+    inventoryUpdatedAt: payload.updated_at || payload.updatedAt || ""
   });
 
   const restock = prevAvailable === 0 && available > 0;
@@ -162,4 +164,3 @@ function startWebhookWorker({ pool, messageService, intervalMs }) {
 }
 
 module.exports = { startWebhookWorker };
-

@@ -651,6 +651,17 @@ app.get("/api/dashboard/overview", async (req, res) => {
       [store.id]
     );
 
+    const inventorySummary = await pool.query(
+      `
+      SELECT
+        COALESCE(SUM(available)::bigint, 0) AS total_units,
+        MAX(COALESCE(inventory_updated_at, updated_at)) AS last_inventory_updated_at
+      FROM inventory_levels
+      WHERE store_id = $1
+      `,
+      [store.id]
+    );
+
     const topVariant = await pool.query(
       `
       SELECT
@@ -660,13 +671,14 @@ app.get("/api/dashboard/overview", async (req, res) => {
         v.price_paise,
         p.title AS product_title,
         p.handle AS product_handle,
+        p.vendor AS vendor,
         COUNT(*)::int AS demand_count,
         COALESCE(SUM(e.price_paise)::bigint, 0) AS missed_revenue_paise
       FROM demand_events e
       JOIN variants v ON v.id = e.variant_id
       JOIN products p ON p.id = v.product_id
       WHERE e.store_id = $1 AND e.event_at >= $2 AND e.event IN ('notify_intent','oos_visit')
-      GROUP BY v.id, v.shopify_variant_id, v.size, v.price_paise, p.title, p.handle
+      GROUP BY v.id, v.shopify_variant_id, v.size, v.price_paise, p.title, p.handle, p.vendor
       ORDER BY demand_count DESC, missed_revenue_paise DESC
       LIMIT 1`,
       [store.id, since]
@@ -677,6 +689,7 @@ app.get("/api/dashboard/overview", async (req, res) => {
       ? {
           productTitle: topVariantRow.product_title,
           productHandle: topVariantRow.product_handle,
+          vendor: topVariantRow.vendor || "",
           size: topVariantRow.size,
           demandCount: topVariantRow.demand_count,
           missedRevenuePaise: Number(topVariantRow.missed_revenue_paise || 0),
@@ -692,6 +705,8 @@ app.get("/api/dashboard/overview", async (req, res) => {
           v.id AS variant_db_id,
           v.shopify_variant_id,
           p.title AS product_title,
+          p.handle AS product_handle,
+          p.vendor AS vendor,
           v.size,
           COUNT(*) FILTER (WHERE e.event IN ('notify_intent','oos_visit'))::int AS demand_count,
           COUNT(*) FILTER (WHERE e.event = 'notify_intent')::int AS notify_intents,
@@ -700,24 +715,25 @@ app.get("/api/dashboard/overview", async (req, res) => {
         JOIN variants v ON v.id = e.variant_id
         JOIN products p ON p.id = v.product_id
         WHERE e.store_id = $1 AND e.event_at >= $2
-        GROUP BY v.id, v.shopify_variant_id, p.title, v.size
+        GROUP BY v.id, v.shopify_variant_id, p.title, p.handle, p.vendor, v.size
       ),
-      last_restock AS (
+      inv AS (
         SELECT
           v.id AS variant_db_id,
-          MAX(il.updated_at) AS last_restocked_at
+          COALESCE(SUM(il.available), 0)::int AS available_units,
+          MAX(COALESCE(il.inventory_updated_at, il.updated_at)) AS last_inventory_updated_at
         FROM variants v
-        JOIN inventory_levels il
+        LEFT JOIN inventory_levels il
           ON il.store_id = v.store_id
          AND il.inventory_item_id = v.inventory_item_id
-        WHERE v.store_id = $1 AND il.available > 0
         GROUP BY v.id
       )
       SELECT
         a.*,
-        lr.last_restocked_at
+        i.available_units,
+        i.last_inventory_updated_at
       FROM agg a
-      LEFT JOIN last_restock lr ON lr.variant_db_id = a.variant_db_id
+      LEFT JOIN inv i ON i.variant_db_id = a.variant_db_id
       WHERE a.demand_count > 0
       ORDER BY a.demand_count DESC, a.missed_revenue_paise DESC
       LIMIT 12`,
@@ -726,17 +742,35 @@ app.get("/api/dashboard/overview", async (req, res) => {
 
     const highRisk = await pool.query(
       `
+      WITH inv AS (
+        SELECT
+          v.id AS variant_db_id,
+          COALESCE(SUM(il.available), 0)::int AS available_units,
+          MAX(COALESCE(il.inventory_updated_at, il.updated_at)) AS last_inventory_updated_at
+        FROM variants v
+        LEFT JOIN inventory_levels il
+          ON il.store_id = v.store_id
+         AND il.inventory_item_id = v.inventory_item_id
+        WHERE v.store_id = $1
+        GROUP BY v.id
+      )
       SELECT
+        p.shopify_product_id,
         p.title AS product_title,
         p.handle AS product_handle,
+        p.vendor AS vendor,
+        v.id AS variant_db_id,
         v.size,
         COUNT(*) FILTER (WHERE e.event IN ('notify_intent','oos_visit'))::int AS demand_count,
-        COALESCE(SUM(e.price_paise) FILTER (WHERE e.event = 'oos_visit')::bigint, 0) AS missed_revenue_paise
+        COALESCE(SUM(e.price_paise) FILTER (WHERE e.event = 'oos_visit')::bigint, 0) AS missed_revenue_paise,
+        i.available_units,
+        i.last_inventory_updated_at
       FROM demand_events e
       JOIN variants v ON v.id = e.variant_id
       JOIN products p ON p.id = v.product_id
+      LEFT JOIN inv i ON i.variant_db_id = v.id
       WHERE e.store_id = $1 AND e.event_at >= $2
-      GROUP BY p.title, p.handle, v.size
+      GROUP BY p.shopify_product_id, p.title, p.handle, p.vendor, v.id, v.size, i.available_units, i.last_inventory_updated_at
       HAVING COUNT(*) FILTER (WHERE e.event IN ('notify_intent','oos_visit')) > 0
       ORDER BY missed_revenue_paise DESC
       LIMIT 12`,
@@ -745,6 +779,33 @@ app.get("/api/dashboard/overview", async (req, res) => {
 
     const maxDemand = demandByVariant.rows.reduce((m, r) => Math.max(m, Number(r.demand_count || 0)), 0) || 1;
     const urgencyScore = Math.round(((Number(topVariantRow?.demand_count || 0) / maxDemand) * 10) * 10) / 10;
+
+    const restockSuggestionsByVendor = (() => {
+      const groups = new Map();
+      for (const r of highRisk.rows) {
+        const vendor = String(r.vendor || "").trim() || "Unknown";
+        const suggestedUnits = Math.max(0, Math.round((Number(r.demand_count || 0)) * 0.35));
+        if (!suggestedUnits) continue;
+        const lastInventoryUpdatedAt = r.last_inventory_updated_at ? new Date(r.last_inventory_updated_at).toISOString() : null;
+        const item = {
+          productTitle: r.product_title,
+          productHandle: r.product_handle,
+          shopifyProductId: String(r.shopify_product_id || ""),
+          size: r.size,
+          demandCount: Number(r.demand_count || 0),
+          missedRevenuePaise: Number(r.missed_revenue_paise || 0),
+          availableUnits: Number(r.available_units || 0),
+          lastInventoryUpdatedAt,
+          suggestedUnits
+        };
+        if (!groups.has(vendor)) groups.set(vendor, []);
+        groups.get(vendor).push(item);
+      }
+      return Array.from(groups.entries()).map(([vendor, items]) => ({
+        vendor,
+        items: items.sort((a, b) => (b.missedRevenuePaise || 0) - (a.missedRevenuePaise || 0))
+      }));
+    })();
 
     res.status(200).json({
       ok: true,
@@ -756,20 +817,248 @@ app.get("/api/dashboard/overview", async (req, res) => {
         topRiskVariant,
         restockUrgencyScore: Number.isFinite(urgencyScore) ? urgencyScore : 0
       },
+      inventory: {
+        totalUnits: Number(inventorySummary.rows[0]?.total_units || 0),
+        lastInventoryUpdatedAt: inventorySummary.rows[0]?.last_inventory_updated_at
+          ? new Date(inventorySummary.rows[0].last_inventory_updated_at).toISOString()
+          : null
+      },
       demandByVariant: demandByVariant.rows.map(r => ({
         productTitle: r.product_title,
+        productHandle: r.product_handle,
+        vendor: r.vendor || "",
         size: r.size,
         demandCount: Number(r.demand_count || 0),
         notifyIntents: Number(r.notify_intents || 0),
         missedRevenuePaise: Number(r.missed_revenue_paise || 0),
-        lastRestockedAt: r.last_restocked_at ? new Date(r.last_restocked_at).toISOString() : null
+        availableUnits: Number(r.available_units || 0),
+        lastInventoryUpdatedAt: r.last_inventory_updated_at ? new Date(r.last_inventory_updated_at).toISOString() : null
       })),
       highRisk: highRisk.rows.map(r => ({
         productTitle: r.product_title,
         productHandle: r.product_handle,
+        vendor: r.vendor || "",
+        shopifyProductId: String(r.shopify_product_id || ""),
         size: r.size,
         demandCount: Number(r.demand_count || 0),
-        missedRevenuePaise: Number(r.missed_revenue_paise || 0)
+        missedRevenuePaise: Number(r.missed_revenue_paise || 0),
+        availableUnits: Number(r.available_units || 0),
+        lastInventoryUpdatedAt: r.last_inventory_updated_at ? new Date(r.last_inventory_updated_at).toISOString() : null,
+        suggestedUnits: Math.max(0, Math.round((Number(r.demand_count || 0)) * 0.35))
+      })),
+      restockSuggestionsByVendor
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+app.get("/api/products/list", async (req, res) => {
+  try {
+    const shopDomain = shopify.normalizeShopDomain(req.query.shop);
+    if (!shopDomain) return res.status(400).json({ ok: false, error: "invalid_shop" });
+    if (!pool) return res.status(400).json({ ok: false, error: "db_not_configured" });
+
+    const store = await dbOps.getStoreByShop({ pool, shopDomain });
+    if (!store) return res.status(404).json({ ok: false, error: "store_not_installed" });
+
+    const since30d = new Date(Date.now() - 30 * 86400000).toISOString();
+    const limit = Math.max(10, Math.min(200, Number(req.query.limit || 50)));
+
+    const rows = await pool.query(
+      `
+      WITH inv AS (
+        SELECT
+          v.product_id,
+          COALESCE(SUM(il.available), 0)::bigint AS total_available_units,
+          MAX(COALESCE(il.inventory_updated_at, il.updated_at)) AS last_inventory_updated_at
+        FROM variants v
+        LEFT JOIN inventory_levels il
+          ON il.store_id = v.store_id
+         AND il.inventory_item_id = v.inventory_item_id
+        WHERE v.store_id = $1
+        GROUP BY v.product_id
+      ),
+      demand AS (
+        SELECT
+          v.product_id,
+          COUNT(*) FILTER (WHERE e.event IN ('notify_intent','oos_visit'))::int AS demand_count,
+          COUNT(*) FILTER (WHERE e.event = 'oos_visit')::int AS oos_visits,
+          COUNT(*) FILTER (WHERE e.event = 'notify_intent')::int AS notify_intents,
+          COALESCE(SUM(e.price_paise) FILTER (WHERE e.event = 'oos_visit')::bigint, 0) AS missed_revenue_paise,
+          MAX(e.event_at) AS last_demand_at
+        FROM demand_events e
+        JOIN variants v ON v.id = e.variant_id
+        WHERE e.store_id = $1 AND e.event_at >= $2
+        GROUP BY v.product_id
+      ),
+      waiting AS (
+        SELECT
+          v.product_id,
+          COUNT(*)::int AS waiting_count
+        FROM waitlist w
+        JOIN variants v ON v.id = w.variant_id
+        WHERE w.store_id = $1 AND w.notified_at IS NULL
+        GROUP BY v.product_id
+      )
+      SELECT
+        p.title,
+        p.handle,
+        p.vendor,
+        p.shopify_product_id,
+        COALESCE(i.total_available_units, 0)::bigint AS total_available_units,
+        i.last_inventory_updated_at,
+        COALESCE(d.demand_count, 0)::int AS demand_count,
+        COALESCE(d.oos_visits, 0)::int AS oos_visits,
+        COALESCE(d.notify_intents, 0)::int AS notify_intents,
+        COALESCE(d.missed_revenue_paise, 0)::bigint AS missed_revenue_paise,
+        d.last_demand_at,
+        COALESCE(w.waiting_count, 0)::int AS waiting_count
+      FROM products p
+      LEFT JOIN inv i ON i.product_id = p.id
+      LEFT JOIN demand d ON d.product_id = p.id
+      LEFT JOIN waiting w ON w.product_id = p.id
+      WHERE p.store_id = $1
+      ORDER BY missed_revenue_paise DESC, demand_count DESC, total_available_units ASC, p.title ASC
+      LIMIT $3
+      `,
+      [store.id, since30d, limit]
+    );
+
+    res.status(200).json({
+      ok: true,
+      shop: store.shop_domain,
+      windowDays: 30,
+      products: rows.rows.map(r => ({
+        title: r.title,
+        handle: r.handle,
+        vendor: r.vendor || "",
+        shopifyProductId: String(r.shopify_product_id || ""),
+        totalAvailableUnits: Number(r.total_available_units || 0),
+        lastInventoryUpdatedAt: r.last_inventory_updated_at ? new Date(r.last_inventory_updated_at).toISOString() : null,
+        demandCount: Number(r.demand_count || 0),
+        oosVisits: Number(r.oos_visits || 0),
+        notifyIntents: Number(r.notify_intents || 0),
+        missedRevenuePaise: Number(r.missed_revenue_paise || 0),
+        lastDemandAt: r.last_demand_at ? new Date(r.last_demand_at).toISOString() : null,
+        waitingCount: Number(r.waiting_count || 0)
+      }))
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+app.get("/api/products/details", async (req, res) => {
+  try {
+    const shopDomain = shopify.normalizeShopDomain(req.query.shop);
+    const handle = String(req.query.handle || "").trim();
+    if (!shopDomain) return res.status(400).json({ ok: false, error: "invalid_shop" });
+    if (!handle) return res.status(400).json({ ok: false, error: "missing_handle" });
+    if (!pool) return res.status(400).json({ ok: false, error: "db_not_configured" });
+
+    const store = await dbOps.getStoreByShop({ pool, shopDomain });
+    if (!store) return res.status(404).json({ ok: false, error: "store_not_installed" });
+
+    const prod = await pool.query(
+      "SELECT id, shopify_product_id, title, handle, vendor, created_at, updated_at FROM products WHERE store_id = $1 AND handle = $2 LIMIT 1",
+      [store.id, handle]
+    );
+    const product = prod.rows[0] || null;
+    if (!product) return res.status(404).json({ ok: false, error: "product_not_found" });
+
+    const since30d = new Date(Date.now() - 30 * 86400000).toISOString();
+
+    const variants = await pool.query(
+      `
+      WITH inv AS (
+        SELECT
+          inventory_item_id,
+          COALESCE(SUM(available), 0)::int AS available_units,
+          MAX(COALESCE(inventory_updated_at, updated_at)) AS last_inventory_updated_at
+        FROM inventory_levels
+        WHERE store_id = $1
+        GROUP BY inventory_item_id
+      ),
+      demand AS (
+        SELECT
+          variant_id,
+          COUNT(*) FILTER (WHERE event IN ('notify_intent','oos_visit'))::int AS demand_count,
+          COUNT(*) FILTER (WHERE event = 'oos_visit')::int AS oos_visits,
+          COUNT(*) FILTER (WHERE event = 'notify_intent')::int AS notify_intents,
+          COALESCE(SUM(price_paise) FILTER (WHERE event = 'oos_visit')::bigint, 0) AS missed_revenue_paise,
+          MAX(event_at) AS last_demand_at
+        FROM demand_events
+        WHERE store_id = $1 AND event_at >= $2
+        GROUP BY variant_id
+      ),
+      waiting AS (
+        SELECT
+          variant_id,
+          COUNT(*)::int AS waiting_count
+        FROM waitlist
+        WHERE store_id = $1 AND notified_at IS NULL
+        GROUP BY variant_id
+      )
+      SELECT
+        v.id AS variant_db_id,
+        v.shopify_variant_id,
+        v.size,
+        v.sku,
+        v.price_paise,
+        v.available,
+        v.inventory_item_id,
+        i.available_units,
+        i.last_inventory_updated_at,
+        d.demand_count,
+        d.oos_visits,
+        d.notify_intents,
+        d.missed_revenue_paise,
+        d.last_demand_at,
+        w.waiting_count
+      FROM variants v
+      LEFT JOIN inv i ON i.inventory_item_id = v.inventory_item_id
+      LEFT JOIN demand d ON d.variant_id = v.id
+      LEFT JOIN waiting w ON w.variant_id = v.id
+      WHERE v.store_id = $1 AND v.product_id = $3
+      ORDER BY (d.demand_count IS NULL), d.demand_count DESC, v.size ASC
+      `,
+      [store.id, since30d, product.id]
+    );
+
+    const totalAvailableUnits = variants.rows.reduce((sum, r) => sum + Number(r.available_units || 0), 0);
+
+    res.status(200).json({
+      ok: true,
+      shop: store.shop_domain,
+      windowDays: 30,
+      product: {
+        id: product.id,
+        shopifyProductId: String(product.shopify_product_id || ""),
+        title: product.title,
+        handle: product.handle,
+        vendor: product.vendor || "",
+        createdAt: product.created_at ? new Date(product.created_at).toISOString() : null,
+        updatedAt: product.updated_at ? new Date(product.updated_at).toISOString() : null
+      },
+      inventory: {
+        totalAvailableUnits
+      },
+      variants: variants.rows.map(r => ({
+        variantDbId: r.variant_db_id,
+        shopifyVariantId: String(r.shopify_variant_id || ""),
+        size: r.size || "",
+        sku: r.sku || "",
+        pricePaise: Number(r.price_paise || 0),
+        available: Boolean(r.available),
+        availableUnits: Number(r.available_units || 0),
+        lastInventoryUpdatedAt: r.last_inventory_updated_at ? new Date(r.last_inventory_updated_at).toISOString() : null,
+        demandCount: Number(r.demand_count || 0),
+        oosVisits: Number(r.oos_visits || 0),
+        notifyIntents: Number(r.notify_intents || 0),
+        missedRevenuePaise: Number(r.missed_revenue_paise || 0),
+        lastDemandAt: r.last_demand_at ? new Date(r.last_demand_at).toISOString() : null,
+        waitingCount: Number(r.waiting_count || 0)
       }))
     });
   } catch (e) {
@@ -797,12 +1086,38 @@ app.get("/api/store/status", async (req, res) => {
       [store.id]
     );
 
+    const freshness = await pool.query(
+      `
+      SELECT
+        (SELECT MAX(updated_at) FROM products WHERE store_id = $1) AS last_products_updated_at,
+        (SELECT MAX(received_at) FROM webhook_logs WHERE store_id = $1) AS last_webhook_received_at,
+        (
+          SELECT MAX(COALESCE(inventory_updated_at, updated_at))
+          FROM inventory_levels
+          WHERE store_id = $1
+        ) AS last_inventory_updated_at
+      `,
+      [store.id]
+    );
+
+    let widget = null;
+    try {
+      const r = await pool.query("SELECT enabled, updated_at FROM widget_settings WHERE store_id = $1 LIMIT 1", [store.id]);
+      widget = r.rows[0] || null;
+    } catch {}
+
     res.status(200).json({
       ok: true,
       shop: store.shop_domain,
       installed: true,
       store: { id: store.id, plan: store.plan, createdAt: store.created_at, updatedAt: store.updated_at },
-      counts: rows.rows[0] || { products_count: 0, variants_count: 0, demand_events_count: 0, webhooks_count: 0 }
+      counts: rows.rows[0] || { products_count: 0, variants_count: 0, demand_events_count: 0, webhooks_count: 0 },
+      widget: widget ? { enabled: Boolean(widget.enabled), updatedAt: widget.updated_at ? new Date(widget.updated_at).toISOString() : null } : null,
+      freshness: {
+        lastProductsUpdatedAt: freshness.rows[0]?.last_products_updated_at ? new Date(freshness.rows[0].last_products_updated_at).toISOString() : null,
+        lastWebhookReceivedAt: freshness.rows[0]?.last_webhook_received_at ? new Date(freshness.rows[0].last_webhook_received_at).toISOString() : null,
+        lastInventoryUpdatedAt: freshness.rows[0]?.last_inventory_updated_at ? new Date(freshness.rows[0].last_inventory_updated_at).toISOString() : null
+      }
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
@@ -1177,7 +1492,8 @@ app.post("/api/shopify/sync", async (req, res) => {
           storeId: store.id,
           shopifyProductId: String(p?.id || ""),
           handle: String(p?.handle || ""),
-          title: String(p?.title || "")
+          title: String(p?.title || ""),
+          vendor: String(p?.vendor || "")
         });
         productsUpserted += productRow ? 1 : 0;
         productsSeen += 1;
