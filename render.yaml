@@ -8,7 +8,7 @@ services:
   - type: web
     name: sizesignal
     env: docker
-    plan: starter
+    plan: free
     autoDeploy: true
     healthCheckPath: /healthz
     envVars:
