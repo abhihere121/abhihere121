@@ -26,7 +26,7 @@ export function WidgetPage() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "";
+  const apiBase = useMemo(() => (typeof window !== "undefined" ? window.location.origin : ""), []);
   const searchParams = useSearchParams();
   const shopFromUrl = searchParams.get("shop") || "";
 

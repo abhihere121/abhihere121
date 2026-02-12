@@ -82,7 +82,7 @@ export function OverviewPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "";
+  const apiBase = useMemo(() => (typeof window !== "undefined" ? window.location.origin : ""), []);
   const searchParams = useSearchParams();
   const shopFromUrl = searchParams.get("shop") || "";
 

@@ -31,7 +31,7 @@ export function ReportsPage() {
   const [to, setTo] = useLocalStorageState("ss_report_to", new Date().toISOString().slice(0, 10));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "";
+  const apiBase = useMemo(() => (typeof window !== "undefined" ? window.location.origin : ""), []);
   const searchParams = useSearchParams();
   const shopFromUrl = searchParams.get("shop") || "";
 
