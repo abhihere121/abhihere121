@@ -11,3 +11,5 @@ dashboard/.next-local/
 npm-debug.log*
 
 .DS_Store
+
+.trae/
