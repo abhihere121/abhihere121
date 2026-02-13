@@ -23,6 +23,19 @@ export function OnboardingWizard({ shop, onComplete }) {
 
     useEffect(() => {
         if (!shop) return;
+        // Fetch store status to get current onboarding step
+        fetch(`/api/store/status?shop=${encodeURIComponent(shop)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok && data.onboarding_step !== undefined) {
+                    setCurrentStep(data.onboarding_step);
+                }
+                if (data.ok && data.widget?.enabled) {
+                    setCurrentStep(3); // Beyond last step
+                }
+            })
+            .catch(() => { });
+
         fetch(`/api/widget/settings?shop=${encodeURIComponent(shop)}`)
             .then(r => r.json())
             .then(data => {
@@ -33,13 +46,29 @@ export function OnboardingWizard({ shop, onComplete }) {
             .catch(() => { });
     }, [shop]);
 
+    const saveStep = async (step) => {
+        try {
+            await fetch("/api/store/onboarding", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ shop, step })
+            });
+        } catch (e) {
+            console.error("Failed to save step", e);
+        }
+    };
+
     const verifyInstall = async () => {
         setChecking(true);
         setInstallStatus("checking");
         await new Promise(r => setTimeout(r, 1200));
         setInstallStatus("success");
         setChecking(false);
-        setTimeout(() => setCurrentStep(1), 800);
+        const nextStep = 1;
+        setTimeout(() => {
+            setCurrentStep(nextStep);
+            saveStep(nextStep);
+        }, 800);
     };
 
     const saveSettings = async () => {
@@ -50,18 +79,27 @@ export function OnboardingWizard({ shop, onComplete }) {
             body: JSON.stringify({ shop, ...widgetSettings })
         });
         setChecking(false);
-        setCurrentStep(2);
+        const nextStep = 2;
+        setCurrentStep(nextStep);
+        saveStep(nextStep);
     };
 
     const enableWidget = async () => {
         setChecking(true);
-        await fetch("/api/widget/settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ shop, enabled: true })
-        });
-        setChecking(false);
-        if (onComplete) onComplete();
+        try {
+            await fetch("/api/widget/settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ shop, ...widgetSettings, enabled: true })
+            });
+            setCurrentStep(3);
+            saveStep(3);
+        } catch (e) {
+            console.error("Enable failed", e);
+        } finally {
+            setChecking(false);
+            if (onComplete) onComplete();
+        }
     };
 
     return (
@@ -226,6 +264,19 @@ export function OnboardingWizard({ shop, onComplete }) {
                             </p>
                             <MDButton style={{ minWidth: "240px", fontSize: "16px" }} onClick={enableWidget} disabled={checking}>
                                 {checking ? "Enabling..." : "Enable Widget Now"}
+                            </MDButton>
+                        </div>
+                    )}
+
+                    {currentStep >= 3 && (
+                        <div style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: "64px", marginBottom: "16px" }}>🎉</div>
+                            <h2 style={{ fontSize: "24px", fontWeight: "600", margin: "0 0 12px 0" }}>You're all set!</h2>
+                            <p style={{ color: mdTheme.colors.onSurfaceVariant, fontSize: "16px", marginBottom: "32px" }}>
+                                RESTIQ is now active and monitoring your store for restock opportunities.
+                            </p>
+                            <MDButton variant="outlined" onClick={() => window.location.reload()}>
+                                View Dashboard
                             </MDButton>
                         </div>
                     )}

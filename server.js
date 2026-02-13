@@ -309,12 +309,29 @@ app.get("/api/store/status", async (req, res) => {
 
   // For MVP, if we have the store in DB, it's "connected"
   // In real app, we might check access_token validity
+  const fetchWidget = store ? await dbOps.getWidgetSettings({ pool, storeId: store.id }) : null;
+
   res.json({
     ok: true,
     installed: !!store,
     shop: store ? store.shop_domain : null,
-    plan: store ? store.plan : "free"
+    plan: store ? store.plan : "free",
+    onboarding_step: store ? store.onboarding_step : 0,
+    widget: {
+      enabled: fetchWidget ? fetchWidget.enabled : false
+    }
   });
+});
+
+// --- Onboarding API ---
+app.post("/api/store/onboarding", async (req, res) => {
+  const { shop, step } = req.body;
+  if (!pool) return res.json({ ok: false });
+  const store = await dbOps.getStoreByShop({ pool, shopDomain: shop });
+  if (!store) return res.json({ ok: false, error: "Store not found" });
+
+  await dbOps.updateOnboardingStep({ pool, storeId: store.id, step });
+  res.json({ ok: true });
 });
 
 // --- Products API ---
@@ -328,7 +345,16 @@ app.get("/api/products", async (req, res) => {
     // List products with waitlist count
     // This is a complex query, we'll simplify for now
     const result = await pool.query(`
-      SELECT p.*, count(w.id)::int as waitlist_count
+      SELECT 
+        p.*, 
+        count(DISTINCT w.id)::int as waitlist_count,
+        json_agg(DISTINCT jsonb_build_object(
+          'id', v.id,
+          'shopify_variant_id', v.shopify_variant_id,
+          'size', v.size,
+          'price_paise', v.price_paise,
+          'available', v.available
+        )) FILTER (WHERE v.id IS NOT NULL) as variants
       FROM products p
       LEFT JOIN variants v ON v.product_id = p.id
       LEFT JOIN waitlist w ON w.variant_id = v.id AND w.notified_at IS NULL
@@ -345,33 +371,33 @@ app.get("/api/products", async (req, res) => {
 });
 
 // --- Reports API ---
-app.get("/report/weekly", async (req, res) => {
-  const shop = req.query.shop || req.query.brand_name; // old param was brand_name sometimes?
+app.get("/api/reports/weekly", async (req, res) => {
+  const shop = req.query.shop;
   const from = req.query.from || new Date(Date.now() - 7 * 86400000).toISOString();
   const to = req.query.to || new Date().toISOString();
 
-  if (!pool) return res.json({ rows: [], message: "DB Error" });
+  if (!pool) return res.json({ ok: false, error: "DB not connected" });
+  const store = await dbOps.getStoreByShop({ pool, shopDomain: shop });
+  if (!store) return res.json({ ok: false, error: "Store not found" });
 
-  // We need store_id to query events
-  // If we don't have shop param, this fails. 
-  // The ReportPage might pass generic params.
-  // For MVP, let's assume we can find the store or return empty.
-  // Actually, ReportPage passes `brand_name` which is just display text in the old version.
-  // We need `shop` to identify data.
-
-  // HACK: If no shop provided, try to find ANY store (Dev mode) or return error
-  // Let's rely on the caller passing shop=... or we fix the caller.
-  // Assuming caller fixes it or providing valid shop.
-
-  // This is a placeholder for the SQL reporting we need to build properly
-  // Implementing simplified version:
-  res.json({
-    rows: [],
-    top: [],
-    total: 0,
-    oos_count: 0,
-    message: "Weekly report requires shop context."
-  });
+  try {
+    const metrics = await dbOps.getDashboardMetrics({ pool, storeId: store.id, days: 7 }); // Simplification for now
+    res.json({
+      ok: true,
+      shop,
+      rows: metrics.demandByVariant.map(r => ({
+        productTitle: r.productTitle,
+        size: r.size,
+        oosVisits: r.demandCount,
+        notifyIntents: 0, // Placeholder
+        missedRevenuePaise: r.missedRevenuePaise
+      })),
+      totalMissedRevenuePaise: metrics.missedRevenuePaise,
+      message: `Founder insights for ${shop}: You have ${metrics.customersWaiting} customers waiting for restocks.`
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e.message) });
+  }
 });
 
 // --- Widget Settings API ---
@@ -395,6 +421,48 @@ app.post("/api/widget/settings", async (req, res) => {
     pool,
     storeId: store.id,
     ...req.body
+  });
+  res.json({ ok: true, settings });
+});
+
+app.get("/api/widget/snippet", async (req, res) => {
+  const shop = req.query.shop;
+  if (!pool) return res.json({ ok: false });
+  const store = await dbOps.getStoreByShop({ pool, shopDomain: shop });
+  if (!store) return res.json({ ok: false, error: "Store not found" });
+
+  const appLoaderSnippet = `<!-- RESTIQ App Loader -->
+<script>
+  window.RESTIQSettings = ${JSON.stringify(await dbOps.getWidgetSettings({ pool, storeId: store.id }) || {})};
+</script>
+<script src="${req.protocol}://${req.get('host')}/restiq/restiq.widget.js" async></script>`;
+
+  const manualInlineSnippet = `<div id="ss-embed-inline"></div>`;
+
+  res.json({ ok: true, appLoaderSnippet, manualInlineSnippet });
+});
+
+// --- Integrations API ---
+app.get("/api/integrations/settings", async (req, res) => {
+  const shop = req.query.shop;
+  if (!pool) return res.json({ ok: false });
+  const store = await dbOps.getStoreByShop({ pool, shopDomain: shop });
+  if (!store) return res.json({ ok: false, error: "Store not found" });
+
+  const settings = await dbOps.getIntegrationSettings({ pool, storeId: store.id });
+  res.json({ ok: true, settings: settings || {} });
+});
+
+app.post("/api/integrations/settings", async (req, res) => {
+  const shop = req.body.shop;
+  if (!pool) return res.json({ ok: false });
+  const store = await dbOps.getStoreByShop({ pool, shopDomain: shop });
+  if (!store) return res.json({ ok: false, error: "Store not found" });
+
+  const settings = await dbOps.upsertIntegrationSettings({
+    pool,
+    storeId: store.id,
+    settings: req.body
   });
   res.json({ ok: true, settings });
 });
@@ -443,6 +511,29 @@ async function start() {
 
     res.json({ ok: true, message: "Manual restock broadcast enqueued." });
   });
+
+  app.post("/api/dev/toggle-stock", async (req, res) => {
+    const { shop, variantId } = req.body;
+    if (!pool || !shop || !variantId) return res.status(400).json({ ok: false });
+    const store = await dbOps.getStoreByShop({ pool, shopDomain: shop });
+    if (!store) return res.status(404).json({ ok: false });
+
+    await dbOps.toggleVariantAvailability({ pool, storeId: store.id, variantDbId: variantId });
+    res.json({ ok: true });
+  });
+
+  app.post("/api/dev/seed", async (req, res) => {
+    const { shop } = req.body;
+    if (!shop) return res.status(400).json({ ok: false, error: "Missing shop" });
+    try {
+      const { seed } = require("./scripts/seed_demo");
+      await seed(shop);
+      res.json({ ok: true, message: "Demo data restored." });
+    } catch (e) {
+      res.status(500).json({ ok: false, error: String(e.message) });
+    }
+  });
+
   app.get("/admin", (req, res) => res.redirect("/app")); // Legacy
 
   // Demo Page

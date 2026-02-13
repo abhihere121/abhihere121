@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Red Kurta - RESTIQ Demo</title>
+    <title>RESTIQ Demo Store</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -20,6 +20,9 @@
             --glass-bg: rgba(255, 255, 255, 0.8);
             --glass-border: rgba(255, 255, 255, 0.3);
             --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --ss-primary-color: #0F172A;
+            --ss-border-radius: 12px;
+            --ss-font-size: 14px;
         }
 
         * {
@@ -40,6 +43,63 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        .header {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--midnight);
+        }
+
+        #collection-container {
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 32px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border: 1px solid transparent;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            border-color: var(--slate-200);
+        }
+
+        .image-thumb {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--slate-400);
+            text-align: center;
+            padding: 20px;
+        }
+
         .product-container {
             max-width: 1000px;
             width: 100%;
@@ -48,7 +108,7 @@
             gap: 48px;
             background: white;
             padding: 32px;
-            border-radius: 24px;
+            border-radius: 28px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
         }
 
@@ -62,7 +122,7 @@
 
         .image-gallery {
             width: 100%;
-            border-radius: 16px;
+            border-radius: 20px;
             background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
             aspect-ratio: 1;
             display: flex;
@@ -71,6 +131,8 @@
             font-weight: 500;
             color: var(--slate-400);
             font-size: 18px;
+            padding: 40px;
+            text-align: center;
         }
 
         .product-info {
@@ -85,6 +147,7 @@
             font-size: 12px;
             font-weight: 700;
             color: var(--sapphire);
+            margin-bottom: 8px;
         }
 
         .product-title {
@@ -135,6 +198,7 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0 16px;
         }
 
         .size-chip:hover:not(.unavailable) {
@@ -154,12 +218,6 @@
             background: var(--slate-50);
             border-style: dashed;
             cursor: pointer;
-            /* We want them to click so widget shows */
-        }
-
-        .size-chip.unavailable.selected {
-            background: var(--slate-200);
-            color: var(--slate-600);
         }
 
         .add-to-cart-btn {
@@ -172,11 +230,10 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s;
         }
 
         .add-to-cart-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
             background: #1e293b;
         }
 
@@ -184,6 +241,35 @@
             background: var(--slate-200);
             color: var(--slate-400);
             cursor: not-allowed;
+        }
+
+        .back-btn {
+            background: white;
+            border: 1px solid var(--slate-200);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .back-btn:hover {
+            border-color: var(--midnight);
+            background: var(--slate-50);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #loading-state {
+            font-size: 18px;
+            color: var(--slate-400);
+            margin-top: 100px;
+            font-weight: 500;
         }
 
         /* Sticky Bottom Bar */
@@ -260,6 +346,7 @@
             box-shadow: var(--glass-shadow);
             transform: scale(0.9);
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
         }
 
         .modal-overlay.active .modal-card {
@@ -329,11 +416,6 @@
             background: #1e293b;
         }
 
-        .submit-btn.loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
         .close-btn {
             position: absolute;
             top: 16px;
@@ -362,34 +444,42 @@
 
 <body>
 
-    <div class="product-container">
-        <div class="image-gallery">
-            Premium Product Image
+    <div class="header">
+        <div class="logo">RESTIQ <span style="font-weight: 400; color: var(--slate-400);">STORES</span></div>
+        <button class="back-btn" id="back-to-collection">&larr; Back to Shop</button>
+    </div>
+
+    <div id="loading-state">Loading storefront...</div>
+
+    <div id="collection-container" class="hidden">
+        <!-- Dynamically populated -->
+    </div>
+
+    <div class="product-container hidden" id="product-container">
+        <div class="image-gallery" id="detail-image">
+            Product Showcase
         </div>
 
         <div class="product-info">
             <div>
                 <div class="brand-label">RESTIQ EXCLUSIVE</div>
-                <h1 class="product-title">Midnight Sapphire Kurta</h1>
+                <h1 class="product-title" id="detail-title">Loading...</h1>
             </div>
 
             <div class="price-row">
-                <span class="current-price">₹2,499</span>
-                <span class="compare-price">₹3,999</span>
+                <span class="current-price" id="detail-price">₹0</span>
+                <span class="compare-price" id="detail-compare-price">₹0</span>
             </div>
 
             <p style="color: var(--slate-600); font-size: 15px; line-height: 1.6;">
-                Experience the perfect blend of luxury and comfort with our signature kurta, now updated in the premium
-                Midnight Sapphire palette.
+                Experience the perfect blend of luxury and comfort with our premium signature collection. Hand-crafted
+                for the modern lifestyle.
             </p>
 
             <div>
                 <div class="section-label">SELECT SIZE</div>
                 <div class="size-chips" id="size-chips">
-                    <div class="size-chip" data-variant="4001" data-available="true">S</div>
-                    <div class="size-chip" data-variant="4002" data-available="false">M</div>
-                    <div class="size-chip" data-variant="4003" data-available="true">L</div>
-                    <div class="size-chip" data-variant="4004" data-available="false">XL</div>
+                    <!-- Dynamic chips -->
                 </div>
             </div>
 
@@ -408,16 +498,16 @@
         <div class="modal-card">
             <button class="close-btn" id="close-modal">&times;</button>
             <div id="modal-form-content">
-                <div class="modal-title">Get restock alerts</div>
-                <div class="modal-subtitle">We'll send you a WhatsApp message the moment Size <span
-                        id="modal-size">M</span> is back in stock.</div>
+                <div class="modal-title" id="ss-success-heading">Get restock alerts</div>
+                <div class="modal-subtitle">We'll send you a message the moment Size <span id="modal-size">M</span> is
+                    back in stock.</div>
 
                 <form id="waitlist-form">
-                    <div class="form-group">
+                    <div class="form-group" id="ss-whatsapp-wrapper">
                         <label>WhatsApp Number</label>
                         <input type="tel" id="whatsapp" placeholder="+91 98765 43210" required>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="ss-email-wrapper">
                         <label>Email Address</label>
                         <input type="email" id="email" placeholder="you@example.com">
                     </div>
@@ -427,19 +517,19 @@
                             style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--sapphire);">
                         <label for="consent"
                             style="font-size: 13px; color: var(--slate-600); cursor: pointer; line-height: 1.4;">
-                            I agree to receive restock updates via WhatsApp and Email.
+                            I agree to receive restock updates.
                         </label>
                     </div>
 
-                    <button type="submit" class="submit-btn" id="submit-btn">Notify Me</button>
+                    <button type="submit" class="submit-btn ss-button-text" id="submit-btn">Notify Me</button>
                 </form>
             </div>
 
             <div class="success-state" id="success-state">
                 <div class="success-icon">✓</div>
                 <div class="modal-title">Great! You're on the list.</div>
-                <div class="modal-subtitle">We will notify you on WhatsApp at <span id="display-phone"></span> as soon
-                    as it arrives.</div>
+                <div class="modal-subtitle" id="ss-success-text">We will notify you at <span id="display-phone"></span>
+                    as soon as it arrives.</div>
                 <button class="submit-btn" style="background: var(--slate-200); color: var(--midnight);"
                     id="close-success">Close</button>
             </div>
@@ -452,104 +542,137 @@
             shop: 'demo-store.myshopify.com'
         };
 
-        window.RESTIQProduct = {
-            id: 123456789,
-            handle: "midnight-sapphire-kurta",
-            shop: "demo-store.myshopify.com",
-            aov: 2499,
-            variants: [
-                { id: 4001, title: "Size S", available: true, option1: "S" },
-                { id: 4002, title: "Size M", available: false, option1: "M" },
-                { id: 4003, title: "Size L", available: true, option1: "L" },
-                { id: 4004, title: "Size XL", available: false, option1: "XL" }
-            ]
-        };
+        let allProducts = [];
+        const shop = 'demo-store.myshopify.com';
 
-        const variants = {
-            '4001': { size: 'S', available: true },
-            '4002': { size: 'M', available: false },
-            '4003': { size: 'L', available: true },
-            '4004': { size: 'XL', available: false }
-        };
-
-        let selected = '4001';
-
-        // Elements
-        const chips = document.querySelectorAll('.size-chip');
-        const atcBtn = document.getElementById('atc-btn');
-        const stickyBar = document.getElementById('sticky-bar');
-        const stickySize = document.getElementById('sticky-size');
-        const modalOverlay = document.getElementById('modal-overlay');
-        const modalSize = document.getElementById('modal-size');
-        const openWaitlist = document.getElementById('open-waitlist');
-        const closeModal = document.getElementById('close-modal');
-        const waitlistForm = document.getElementById('waitlist-form');
-        const successState = document.getElementById('success-state');
-        const formContent = document.getElementById('modal-form-content');
-
-        // Logic
-        function updateUI(variantId) {
-            const v = variants[variantId];
-            if (!v) return;
-            chips.forEach(c => {
-                c.classList.toggle('selected', c.dataset.variant === variantId);
-            });
-
-            if (v.available) {
-                atcBtn.disabled = false;
-                atcBtn.textContent = 'Add to Cart';
-                stickyBar.classList.remove('visible');
-            } else {
-                atcBtn.disabled = true;
-                atcBtn.textContent = 'Out of Stock';
-                stickySize.textContent = v.size;
-                modalSize.textContent = v.size;
-                stickyBar.classList.add('visible');
+        async function init() {
+            try {
+                const res = await fetch(`/api/products?shop=${shop}`);
+                const json = await res.json();
+                if (json.ok) {
+                    allProducts = json.products;
+                    renderCollection();
+                } else {
+                    document.getElementById('loading-state').textContent = "Error loading storefront.";
+                }
+            } catch (e) {
+                document.getElementById('loading-state').textContent = "Connection failed.";
             }
         }
 
-        chips.forEach(chip => {
-            chip.addEventListener('click', () => {
-                selected = chip.dataset.variant;
-                updateUI(selected);
+        function renderCollection() {
+            window.scrollTo(0, 0);
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('product-container').classList.add('hidden');
+            document.getElementById('back-to-collection').style.display = 'none';
+            document.getElementById('sticky-bar').classList.remove('visible');
+
+            const container = document.getElementById('collection-container');
+            container.innerHTML = '';
+            container.classList.remove('hidden');
+
+            allProducts.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.onclick = () => showProduct(p.shopify_product_id);
+
+                card.innerHTML = `
+                    <div class="image-thumb">
+                        ${p.image_url ? `<img src="${p.image_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">` : p.title}
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <div class="brand-label" style="margin-bottom: 0;">NEW ARRIVAL</div>
+                        <div style="font-weight: 700; font-size: 20px; line-height: 1.2;">${p.title}</div>
+                        <div style="color: var(--slate-600); font-size: 14px; margin-top: 8px;">Explore Options &rarr;</div>
+                    </div>
+                `;
+                container.appendChild(card);
             });
-        });
+        }
 
-        openWaitlist.addEventListener('click', () => {
-            modalOverlay.classList.add('active');
-        });
+        function showProduct(shopifyId) {
+            window.scrollTo(0, 0);
+            const p = allProducts.find(x => String(x.shopify_product_id) === String(shopifyId));
+            if (!p) return;
 
-        [closeModal, document.getElementById('close-success')].forEach(b => {
-            b.addEventListener('click', () => {
-                modalOverlay.classList.remove('active');
-                setTimeout(() => {
-                    successState.style.display = 'none';
-                    formContent.style.display = 'block';
-                }, 300);
+            // Prepare RESTIQProduct for widget
+            window.RESTIQProduct = {
+                id: p.shopify_product_id,
+                handle: p.handle,
+                shop: shop,
+                aov: (p.variants?.[0]?.price_paise || 249900) / 100,
+                variants: (p.variants || []).map(v => ({
+                    id: v.shopify_variant_id,
+                    title: v.size,
+                    available: v.available,
+                    option1: v.size
+                }))
+            };
+
+            // Update UI
+            document.getElementById('collection-container').classList.add('hidden');
+            document.getElementById('product-container').classList.remove('hidden');
+            document.getElementById('back-to-collection').style.display = 'block';
+
+            document.getElementById('detail-title').textContent = p.title;
+
+            const detailImage = document.getElementById('detail-image');
+            if (p.image_url) {
+                detailImage.innerHTML = `<img src="${p.image_url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;">`;
+                detailImage.style.padding = '0';
+            } else {
+                detailImage.textContent = p.title;
+                detailImage.style.padding = '40px';
+            }
+
+            const basePrice = (p.variants?.[0]?.price_paise || 249900) / 100;
+            document.getElementById('detail-price').textContent = `₹${basePrice.toLocaleString()}`;
+            document.getElementById('detail-compare-price').textContent = `₹${Math.round(basePrice * 1.6).toLocaleString()}`;
+
+            const chipContainer = document.getElementById('size-chips');
+            chipContainer.innerHTML = '';
+
+            window.RESTIQProduct.variants.forEach((v) => {
+                const chip = document.createElement('div');
+                chip.className = `size-chip ${v.available ? '' : 'unavailable'}`;
+                chip.dataset.variant = v.id;
+                chip.dataset.available = v.available;
+                chip.textContent = v.title;
+                chip.onclick = (e) => {
+                    e.stopPropagation();
+                    selectVariant(v.id);
+                };
+                chipContainer.appendChild(chip);
             });
-        });
 
-        waitlistForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submit-btn');
-            const phone = document.getElementById('whatsapp').value;
+            // Select first variant AFTER they are all added to DOM
+            if (window.RESTIQProduct.variants.length > 0) {
+                selectVariant(window.RESTIQProduct.variants[0].id);
+            }
 
-            btn.classList.add('loading');
-            btn.textContent = 'Submitting...';
+            // Re-wire widget logic
+            if (window.SS_WIRE) window.SS_WIRE();
+        }
 
-            // Simulate API
-            await new Promise(r => setTimeout(r, 1200));
+        function selectVariant(id) {
+            const chips = document.querySelectorAll('.size-chip');
+            chips.forEach(c => c.classList.toggle('selected', String(c.dataset.variant) === String(id)));
 
-            formContent.style.display = 'none';
-            successState.style.display = 'block';
-            document.getElementById('display-phone').textContent = phone;
-        });
+            // Trigger widget toggle
+            if (window.SS_TOGGLE) window.SS_TOGGLE();
+        }
 
-        // Init
-        updateUI('4001');
+        document.getElementById('back-to-collection').onclick = renderCollection;
+
+        // Hook into widget's wire function if it exists, or wait for it
+        window.SS_WIRE_HOOK = () => {
+            // Widget will populate functions here
+        };
+
+        init();
     </script>
 
-    <!-- External scripts for real logic -->
+    <!-- External script for real logic -->
     <script src="restiq/restiq.widget.js"></script>
 
 </body>

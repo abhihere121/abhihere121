@@ -115,6 +115,21 @@ export function OverviewPage() {
   const highRiskRows = data?.ok ? data.highRisk || [] : [];
   const restockSuggestionsByVendor = data?.ok ? data.restockSuggestionsByVendor || [] : [];
 
+  const handleToggleStock = async (variantId) => {
+    try {
+      const res = await fetch(`${apiBase}/api/dev/toggle-stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, variantId })
+      });
+      if (res.ok) {
+        setRefreshNonce(n => n + 1);
+      }
+    } catch (e) {
+      console.error("Toggle stock failed:", e);
+    }
+  };
+
   const fmtTs = (iso) => {
     const v = String(iso || "");
     if (!v) return "—";
@@ -124,6 +139,7 @@ export function OverviewPage() {
   };
 
   const tableColumns = [
+    { header: "Image", align: "left" },
     { header: "Product", align: "left" },
     { header: "Vendor", align: "left" },
     { header: "Variant", align: "left" },
@@ -132,10 +148,18 @@ export function OverviewPage() {
     { header: "Available", align: "right" },
     { header: "Last Inventory", align: "left" },
     { header: "Suggested Units", align: "right" },
+    { header: "Testing", align: "center" },
     { header: "", align: "center" }
   ];
 
   const tableRows = highRiskRows.map((r) => [
+    <div key={`img-${r.productHandle || r.productTitle}-${r.size || ""}`} style={{ width: 40, height: 40, borderRadius: 6, overflow: 'hidden', background: mdTheme.colors.surfaceVariant }}>
+      {r.productImage ? (
+        <img src={r.productImage} alt={r.productTitle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 10 }}>No Image</div>
+      )}
+    </div>,
     <MDButton
       key={`${r.productHandle || r.productTitle}-${r.size || ""}`}
       href={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
@@ -151,9 +175,18 @@ export function OverviewPage() {
     fmtTs(r.lastInventoryUpdatedAt),
     String(Number.isFinite(Number(r.suggestedUnits)) ? r.suggestedUnits : Math.max(0, Math.round((r.demandCount || 0) * 0.35))),
     <MDButton
+      key={`toggle-${r.variantId}`}
+      variant="outlined"
+      size="small"
+      onClick={() => handleToggleStock(r.variantId)}
+      tone={r.isAvailable ? "error" : "success"}
+    >
+      {r.isAvailable ? "Set OOS" : "Set In Stock"}
+    </MDButton>,
+    <MDButton
       key={`view-${r.productHandle || r.productTitle}-${r.size || ""}`}
       href={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
-      variant="outlined"
+      variant="tonal"
       size="small"
     >
       View
