@@ -1,0 +1,153 @@
+/* Material Design 3 - Design Tokens (Midnight Sapphire Redesign) */
+
+:root {
+  /* ========== Color System ========== */
+  /* Primary Midnight */
+  --md-sys-color-primary: #0F172A;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #E0E7FF;
+  --md-sys-color-on-primary-container: #0F172A;
+
+  /* Secondary Sapphire */
+  --md-sys-color-secondary: #3B82F6;
+  --md-sys-color-on-secondary: #FFFFFF;
+  --md-sys-color-secondary-container: #DBEAFE;
+  --md-sys-color-on-secondary-container: #1E3A8A;
+
+  /* Tertiary Slate */
+  --md-sys-color-tertiary: #94A3B8;
+  --md-sys-color-on-tertiary: #FFFFFF;
+  --md-sys-color-tertiary-container: #F1F5F9;
+  --md-sys-color-on-tertiary-container: #1E293B;
+
+  /* Error */
+  --md-sys-color-error: #EF4444;
+  --md-sys-color-on-error: #FFFFFF;
+  --md-sys-color-error-container: #FEE2E2;
+  --md-sys-color-on-error-container: #7F1D1D;
+
+  /* Surface & Background */
+  --md-sys-color-surface: #FFFFFF;
+  --md-sys-color-on-surface: #0F172A;
+  --md-sys-color-surface-variant: #F8FAFC;
+  --md-sys-color-on-surface-variant: #64748B;
+  --md-sys-color-outline: #CBD5E1;
+  --md-sys-color-outline-variant: #E2E8F0;
+
+  /* ========== Typography Scale ========== */
+  --md-sys-typescale-display-large-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-display-large-size: 57px;
+  --md-sys-typescale-display-large-line-height: 64px;
+  --md-sys-typescale-display-large-weight: 400;
+
+  --md-sys-typescale-headline-large-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-headline-large-size: 30px;
+  --md-sys-typescale-headline-large-line-height: 36px;
+  --md-sys-typescale-headline-large-weight: 600;
+
+  --md-sys-typescale-headline-medium-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-headline-medium-size: 24px;
+  --md-sys-typescale-headline-medium-line-height: 32px;
+  --md-sys-typescale-headline-medium-weight: 600;
+
+  --md-sys-typescale-title-large-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-title-large-size: 18px;
+  --md-sys-typescale-title-large-line-height: 24px;
+  --md-sys-typescale-title-large-weight: 600;
+
+  --md-sys-typescale-title-medium-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-title-medium-size: 16px;
+  --md-sys-typescale-title-medium-line-height: 22px;
+  --md-sys-typescale-title-medium-weight: 600;
+
+  --md-sys-typescale-body-large-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-body-large-size: 16px;
+  --md-sys-typescale-body-large-line-height: 24px;
+  --md-sys-typescale-body-large-weight: 400;
+
+  --md-sys-typescale-body-medium-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-body-medium-size: 14px;
+  --md-sys-typescale-body-medium-line-height: 20px;
+  --md-sys-typescale-body-medium-weight: 400;
+
+  --md-sys-typescale-label-large-font: 'Inter', 'Roboto', sans-serif;
+  --md-sys-typescale-label-large-size: 14px;
+  --md-sys-typescale-label-large-line-height: 20px;
+  --md-sys-typescale-label-large-weight: 600;
+
+  /* ========== Elevation (Shadows) ========== */
+  --md-sys-elevation-0: none;
+  --md-sys-elevation-1: 0px 1px 3px 0px rgba(15, 23, 42, 0.08), 0px 1px 2px 0px rgba(15, 23, 42, 0.04);
+  --md-sys-elevation-2: 0px 4px 6px -1px rgba(15, 23, 42, 0.1), 0px 2px 4px -1px rgba(15, 23, 42, 0.06);
+  --md-sys-elevation-3: 0px 10px 15px -3px rgba(15, 23, 42, 0.1), 0px 4px 6px -2px rgba(15, 23, 42, 0.05);
+  --md-sys-elevation-4: 0px 20px 25px -5px rgba(15, 23, 42, 0.1), 0px 10px 10px -5px rgba(15, 23, 42, 0.04);
+  --md-sys-elevation-5: 0px 25px 50px -12px rgba(15, 23, 42, 0.25);
+
+  /* ========== Shape (Border Radius) ========== */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 24px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* ========== Motion (Easing & Duration) ========== */
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-decelerated: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-accelerated: cubic-bezier(0.3, 0, 1, 1);
+
+  --md-sys-motion-duration-short1: 50ms;
+  --md-sys-motion-duration-short2: 100ms;
+  --md-sys-motion-duration-short3: 150ms;
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  --md-sys-motion-duration-long1: 450ms;
+  --md-sys-motion-duration-long2: 500ms;
+}
+
+/* ========== Component Tokens ========== */
+
+/* Filled Button */
+.md-filled-button {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-radius: var(--md-sys-shape-corner-full);
+  padding: 10px 24px;
+  border: none;
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  cursor: pointer;
+  box-shadow: var(--md-sys-elevation-1);
+  transition: all var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard);
+}
+
+.md-filled-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-sys-elevation-2);
+  background-color: var(--md-sys-color-secondary);
+}
+
+.md-filled-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-sys-elevation-1);
+}
+
+/* Elevated Card */
+.md-elevated-card {
+  background-color: var(--md-sys-color-surface);
+  border-radius: var(--md-sys-shape-corner-medium);
+  box-shadow: var(--md-sys-elevation-1);
+  transition: all var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard);
+}
+
+.md-elevated-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--md-sys-elevation-2);
+}

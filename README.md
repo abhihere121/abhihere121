@@ -1,6 +1,6 @@
-# SizeSignal MVP - Runnable Demo
+# RESTIQ - Smart Out of Stock Demand Capture
 
-This is the runnable MVP for **SizeSignal** with a local end-to-end flow: capture out-of-stock demand, store it locally, generate a weekly founder report, and simulate WhatsApp sends.
+RESTIQ is a revenue-recovery engine for Shopify brands. It captures out-of-stock demand, analyzes intent, and automates restock alerts via WhatsApp, Email, and Klaviyo.
 
 ## 🚀 Quick Start (Local Demo)
 

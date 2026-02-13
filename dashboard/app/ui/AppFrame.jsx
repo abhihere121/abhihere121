@@ -1,31 +1,22 @@
 "use client";
 
-import { Frame, Navigation } from "@shopify/polaris";
+import { MDNavigationDrawer } from "../material";
 import { usePathname } from "next/navigation";
 
 export function AppFrame({ children }) {
   const pathname = usePathname() || "/";
-  const basePath = "/app";
-  const location = (typeof window !== "undefined" ? window.location.pathname : `${basePath}${pathname}`)
-    .replace(/\/$/, "") || basePath;
+  const navItems = [
+    { label: "Home", url: "/" },
+    { label: "Products", url: "/products" },
+    { label: "Reports", url: "/reports" },
+    { label: "Integrations", url: "/integrations" },
+    { label: "Widget", url: "/widget" },
+    { label: "Settings", url: "/settings" }
+  ];
 
   return (
-    <Frame
-      navigation={
-        <Navigation location={location}>
-          <Navigation.Section
-            items={[
-              { label: "Home", url: `${basePath}` },
-              { label: "Products", url: `${basePath}/products` },
-              { label: "Reports", url: `${basePath}/reports` },
-              { label: "Widget", url: `${basePath}/widget` },
-              { label: "Settings", url: `${basePath}/settings` }
-            ]}
-          />
-        </Navigation>
-      }
-    >
+    <MDNavigationDrawer items={navItems}>
       {children}
-    </Frame>
+    </MDNavigationDrawer>
   );
 }

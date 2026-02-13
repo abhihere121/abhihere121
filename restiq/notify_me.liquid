@@ -1,4 +1,4 @@
-<div id="size-signal-widget" class="ss-widget" style="display:none;">
+<div id="restiq-widget" class="ss-widget" style="display:none;">
   <div class="ss-card">
     <div class="ss-title">Notify me when this size is back</div>
     <form id="ss-notify-form">
@@ -36,7 +36,7 @@
 </style>
 
 <script>
-  window.SizeSignalProduct = {
+  window.RESTIQProduct = {
     id: {{ product.id }},
     handle: "{{ product.handle }}",
     aov: {{ cart.total_price | default: 0 | divided_by: 100 | default: 0 }},
@@ -55,5 +55,5 @@
   };
 </script>
 
-<script src="{{ 'size-signal.widget.js' | asset_url }}" defer></script>
-<script src="{{ 'size-signal.tracking.js' | asset_url }}" defer></script>
+<script src="{{ 'restiq.widget.js' | asset_url }}" defer></script>
+<script src="{{ 'restiq.tracking.js' | asset_url }}" defer></script>

@@ -1,4 +1,4 @@
-📦 SizeSignal Weekly Report — {{brand_name}}
+📦 RESTIQ Weekly Report — {{brand_name}}
 Week of {{week_range}}
 
 🔴 TOP MISSED SALES THIS WEEK:

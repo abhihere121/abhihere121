@@ -1,7 +1,7 @@
 {
-  "name": "sizesignal-mvp",
-  "version": "1.0.0",
-  "description": "Local MVP for SizeSignal - Out of Stock Demand Capture",
+  "name": "restiq",
+  "version": "2.1.0",
+  "description": "RESTIQ - Smart Out of Stock Demand Capture & Restock Automation",
   "main": "server.js",
   "scripts": {
     "start": "node --dns-result-order=ipv4first server.js",

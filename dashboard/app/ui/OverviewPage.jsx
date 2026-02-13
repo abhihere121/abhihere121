@@ -1,19 +1,15 @@
 "use client";
 
 import {
-  Badge,
-  BlockStack,
-  Box,
-  Button,
-  Card,
-  DataTable,
-  Divider,
-  InlineGrid,
-  InlineStack,
-  Layout,
-  Page,
-  Text
-} from "@shopify/polaris";
+  MDCard,
+  MDMetricCard,
+  MDButton,
+  MDChip,
+  MDDataTable,
+  mdTheme
+} from "../material";
+import { OnboardingWizard } from "./OnboardingWizard";
+import { EmptyState } from "./EmptyState";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { clamp, formatRsFromPaise } from "./format";
@@ -24,52 +20,46 @@ function useLocalStorageState(key, initialValue) {
     try {
       const raw = localStorage.getItem(key);
       if (raw !== null) setValue(raw);
-    } catch {}
+    } catch { }
   }, [key]);
   useEffect(() => {
     try {
       localStorage.setItem(key, value);
-    } catch {}
+    } catch { }
   }, [key, value]);
   return [value, setValue];
-}
-
-function RiskBadge({ badge }) {
-  const tone = badge === "critical" ? "critical" : badge === "high" ? "warning" : "info";
-  const label = badge === "critical" ? "Critical" : badge === "high" ? "High" : "Medium";
-  return <Badge tone={tone}>{label}</Badge>;
 }
 
 function BarChart({ rows }) {
   const max = rows.reduce((m, r) => Math.max(m, r.demandCount), 0) || 1;
   return (
-    <BlockStack gap="200">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: mdTheme.spacing.sm }}>
       {rows.map((r) => {
         const w = clamp(Math.round((r.demandCount / max) * 100), 3, 100);
         return (
-          <Box key={`${r.productTitle}-${r.size}`} padding="200">
-            <InlineStack align="space-between" blockAlign="center" gap="200">
-              <Text as="span" variant="bodyMd" fontWeight="medium">
+          <div key={`${r.productTitle}-${r.size}`} style={{ padding: mdTheme.spacing.md }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: mdTheme.spacing.sm, marginBottom: mdTheme.spacing.sm }}>
+              <span style={{ fontWeight: 500, fontSize: mdTheme.typography.bodyMedium.fontSize }}>
                 {r.productTitle} · {r.size}
-              </Text>
-              <Text as="span" variant="bodyMd">
+              </span>
+              <span style={{ fontSize: mdTheme.typography.bodyMedium.fontSize, color: mdTheme.colors.onSurfaceVariant }}>
                 {r.demandCount} demand · ₹{formatRsFromPaise(r.missedRevenuePaise)}
-              </Text>
-            </InlineStack>
-            <div style={{ height: 10, background: "#E2E8F0", borderRadius: 999, marginTop: 8 }}>
+              </span>
+            </div>
+            <div style={{ height: 10, background: mdTheme.colors.surfaceVariant, borderRadius: mdTheme.shape.full }}>
               <div
                 style={{
                   width: `${w}%`,
                   height: 10,
-                  background: r.demandCount >= 200 ? "#EF4444" : r.demandCount >= 80 ? "#F59E0B" : "#22C55E",
-                  borderRadius: 999
+                  background: r.demandCount >= 200 ? mdTheme.colors.error : r.demandCount >= 80 ? mdTheme.colors.warning : mdTheme.colors.success,
+                  borderRadius: mdTheme.shape.full
                 }}
               />
             </div>
-          </Box>
+          </div>
         );
       })}
-    </BlockStack>
+    </div>
   );
 }
 
@@ -94,24 +84,29 @@ export function OverviewPage() {
     let cancelled = false;
     const run = async () => {
       setLoading(true);
-      try {
-        const statusRes = await fetch(`${apiBase}/api/store/status?shop=${encodeURIComponent(shop)}`, {
-          cache: "no-store"
-        });
-        const statusJson = await statusRes.json().catch(() => null);
-        if (!cancelled) setStatus(statusJson);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
-        const res = await fetch(`${apiBase}/api/dashboard/overview?shop=${encodeURIComponent(shop)}`, {
-          cache: "no-store"
-        });
-        const json = await res.json();
-        if (!cancelled) setData(json);
+      try {
+        const [statusRes, dataRes] = await Promise.all([
+          fetch(`${apiBase}/api/store/status?shop=${encodeURIComponent(shop)}`, { signal: controller.signal, cache: "no-store" }),
+          fetch(`${apiBase}/api/dashboard/overview?shop=${encodeURIComponent(shop)}`, { signal: controller.signal, cache: "no-store" })
+        ]);
+
+        const statusJson = await statusRes.json().catch(() => null);
+        const dataJson = await dataRes.json().catch(() => null);
+
+        if (!cancelled) {
+          if (statusJson) setStatus(statusJson);
+          if (dataJson) setData(dataJson);
+        }
       } catch (e) {
         if (!cancelled) {
-          setStatus({ ok: false, error: String(e?.message || e) });
-          setData({ ok: false, error: String(e?.message || e) });
+          setStatus({ ok: false, error: "Connection failed. Please check your shop domain." });
+          setData({ ok: false, error: e.name === 'AbortError' ? "Request timed out" : String(e) });
         }
       } finally {
+        clearTimeout(timeoutId);
         if (!cancelled) setLoading(false);
       }
     };
@@ -140,14 +135,26 @@ export function OverviewPage() {
     return d.toLocaleString();
   };
 
+  const tableColumns = [
+    { header: "Product", align: "left" },
+    { header: "Vendor", align: "left" },
+    { header: "Variant", align: "left" },
+    { header: "Demand", align: "right" },
+    { header: "Missed Revenue", align: "right" },
+    { header: "Available", align: "right" },
+    { header: "Last Inventory", align: "left" },
+    { header: "Suggested Units", align: "right" },
+    { header: "", align: "center" }
+  ];
+
   const tableRows = highRiskRows.map((r) => [
-    <Button
+    <MDButton
       key={`${r.productHandle || r.productTitle}-${r.size || ""}`}
-      url={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
-      plain
+      href={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
+      variant="text"
     >
       {r.productTitle}
-    </Button>,
+    </MDButton>,
     r.vendor || "—",
     r.size ? `Size ${r.size}` : "—",
     String(r.demandCount),
@@ -155,13 +162,14 @@ export function OverviewPage() {
     String(Number.isFinite(Number(r.availableUnits)) ? r.availableUnits : 0),
     fmtTs(r.lastInventoryUpdatedAt),
     String(Number.isFinite(Number(r.suggestedUnits)) ? r.suggestedUnits : Math.max(0, Math.round((r.demandCount || 0) * 0.35))),
-    <Button
+    <MDButton
       key={`view-${r.productHandle || r.productTitle}-${r.size || ""}`}
-      url={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
-      plain
+      href={`${basePath}/products/${encodeURIComponent(r.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
+      variant="outlined"
+      size="small"
     >
       View
-    </Button>
+    </MDButton>
   ]);
 
   const installed = Boolean(status?.ok && status?.installed);
@@ -191,323 +199,173 @@ export function OverviewPage() {
   };
 
   return (
-    <Page
-      title={title}
-      subtitle="Revenue-first. Actionable. Founder-speed."
-      primaryAction={{ content: "Upgrade", disabled: true }}
-      secondaryActions={[{ content: "Support", disabled: true }]}
-    >
-      <Layout>
-        <Layout.Section>
-          <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">
-                  Get started now
-                </Text>
-                <Divider />
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center" gap="200">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Badge tone={installed ? "success" : "critical"}>{installed ? "Done" : "Todo"}</Badge>
-                      <Text as="p" variant="bodyMd">
-                        1. Install app
-                      </Text>
-                    </InlineStack>
-                    {!installed ? (
-                      <Button url={installUrl} external>
-                        Install
-                      </Button>
-                    ) : null}
-                  </InlineStack>
+    <div style={{ padding: mdTheme.spacing.xl, maxWidth: '1400px', margin: '0 auto' }}>
+      {/* Page Header */}
+      <div style={{ marginBottom: mdTheme.spacing.xl }}>
+        <h1 style={{
+          fontSize: mdTheme.typography.headlineLarge.fontSize,
+          fontWeight: mdTheme.typography.headlineLarge.fontWeight,
+          color: mdTheme.colors.onSurface,
+          margin: 0,
+          marginBottom: mdTheme.spacing.xs
+        }}>
+          {title}
+        </h1>
+        <p style={{
+          fontSize: mdTheme.typography.bodyLarge.fontSize,
+          color: mdTheme.colors.onSurfaceVariant,
+          margin: 0
+        }}>
+          Revenue-first. Actionable. Founder-speed.
+        </p>
+      </div>
 
-                  <InlineStack align="space-between" blockAlign="center" gap="200">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Badge tone={hasProducts ? "success" : "critical"}>{hasProducts ? "Done" : "Todo"}</Badge>
-                      <Text as="p" variant="bodyMd">
-                        2. Sync products
-                      </Text>
-                    </InlineStack>
-                    {installed && !hasProducts ? (
-                      <Button onClick={runSync} disabled={syncing}>
-                        {syncing ? "Syncing…" : "Sync now"}
-                      </Button>
-                    ) : null}
-                  </InlineStack>
+      {/* Get Started + Store Status */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: mdTheme.spacing.lg, marginBottom: mdTheme.spacing.xl }}>
+        <OnboardingWizard shop={shop} onComplete={() => setRefreshNonce(n => n + 1)} />
 
-                  <InlineStack align="space-between" blockAlign="center" gap="200">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Badge tone={widgetEnabled ? "success" : "critical"}>{widgetEnabled ? "Done" : "Todo"}</Badge>
-                      <Text as="p" variant="bodyMd">
-                        3. Setup widget
-                      </Text>
-                    </InlineStack>
-                    {installed ? (
-                      <Button url={`${basePath}/widget?shop=${encodeURIComponent(shop)}`} plain>
-                        Open
-                      </Button>
-                    ) : null}
-                  </InlineStack>
+        <MDCard elevation={1} padding="lg">
+          <h2 style={{ fontSize: mdTheme.typography.titleLarge.fontSize, fontWeight: 500, margin: 0, marginBottom: mdTheme.spacing.md }}>
+            Store status
+          </h2>
+          <div style={{ height: '1px', backgroundColor: mdTheme.colors.outlineVariant, margin: `${mdTheme.spacing.md} 0` }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: mdTheme.spacing.md }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 500 }}>Shopify store</span>
+              <MDButton href={`${basePath}/settings`} variant="text" size="small">Edit</MDButton>
+            </div>
+            <p style={{ margin: 0 }}>{shop || "—"}</p>
 
-                  <InlineStack align="space-between" blockAlign="center" gap="200">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Badge tone="info">Soon</Badge>
-                      <Text as="p" variant="bodyMd">
-                        4. Schedule reports
-                      </Text>
-                    </InlineStack>
-                  </InlineStack>
+            <div style={{ display: 'flex', gap: mdTheme.spacing.sm }}>
+              <MDChip tone={installed ? "success" : "error"} size="small">
+                {installed ? "Installed" : "Not installed"}
+              </MDChip>
+              <MDChip tone={widgetEnabled ? "success" : "warning"} size="small">
+                {widgetEnabled ? "Widget on" : "Widget off"}
+              </MDChip>
+            </div>
 
-                  <InlineStack align="space-between" blockAlign="center" gap="200">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Badge tone="info">Soon</Badge>
-                      <Text as="p" variant="bodyMd">
-                        5. Invite teammates
-                      </Text>
-                    </InlineStack>
-                  </InlineStack>
-                </BlockStack>
-                {syncResult?.error ? (
-                  <Text as="p" variant="bodySm" tone="critical">
-                    Sync error: {syncResult.error}
-                  </Text>
-                ) : null}
-              </BlockStack>
-            </Card>
+            {counts && (
+              <p style={{ fontSize: mdTheme.typography.bodySmall.fontSize, color: mdTheme.colors.onSurfaceVariant, margin: 0 }}>
+                {counts.products_count} products · {counts.variants_count} variants · {counts.demand_events_count} events
+              </p>
+            )}
 
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">
-                  Store status
-                </Text>
-                <Divider />
-                <BlockStack gap="200">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text as="p" variant="bodyMd" fontWeight="medium">
-                      Shopify store
-                    </Text>
-                    <Button url={`${basePath}/settings`} plain>
-                      Edit
-                    </Button>
-                  </InlineStack>
-                  <Text as="p" variant="bodyMd">
-                    {shop || "—"}
-                  </Text>
+            <div style={{ height: '1px', backgroundColor: mdTheme.colors.outlineVariant }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: mdTheme.typography.bodySmall.fontSize }}>
+              <span style={{ color: mdTheme.colors.onSurfaceVariant }}>Inventory last update</span>
+              <span>{fmtTs(freshness?.lastInventoryUpdatedAt)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: mdTheme.typography.bodySmall.fontSize }}>
+              <span style={{ color: mdTheme.colors.onSurfaceVariant }}>Webhook last received</span>
+              <span>{fmtTs(freshness?.lastWebhookReceivedAt)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: mdTheme.typography.bodySmall.fontSize }}>
+              <span style={{ color: mdTheme.colors.onSurfaceVariant }}>Products last updated</span>
+              <span>{fmtTs(freshness?.lastProductsUpdatedAt)}</span>
+            </div>
 
-                  <InlineStack gap="200" blockAlign="center">
-                    <Badge tone={installed ? "success" : "critical"}>{installed ? "Installed" : "Not installed"}</Badge>
-                    <Badge tone={widgetEnabled ? "success" : "attention"}>{widgetEnabled ? "Widget on" : "Widget off"}</Badge>
-                  </InlineStack>
+            <p style={{ fontSize: mdTheme.typography.bodySmall.fontSize, color: mdTheme.colors.onSurfaceVariant, margin: 0, paddingTop: mdTheme.spacing.sm }}>
+              Status: {loading ? "Loading…" : installed ? "Ready" : "Action required"}
+            </p>
+          </div>
+        </MDCard>
+      </div>
 
-                  {counts ? (
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      {counts.products_count} products · {counts.variants_count} variants · {counts.demand_events_count} events
-                    </Text>
-                  ) : null}
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: mdTheme.spacing.lg, marginBottom: mdTheme.spacing.xl }}>
+        <MDMetricCard
+          title="₹ Recovered Revenue"
+          value={kpis ? `₹${formatRsFromPaise(kpis.recoveredRevenuePaise)}` : "—"}
+          subtitle="Sales attributed to restock alerts."
+          tone="success"
+        />
+        <MDMetricCard
+          title="Customers Waiting"
+          value={kpis ? String(kpis.customersWaiting) : "—"}
+          subtitle="Auto-notified on restock."
+        />
+        <MDMetricCard
+          title="₹ Missed Revenue"
+          value={kpis ? `₹${formatRsFromPaise(kpis.missedRevenuePaise)}` : "—"}
+          subtitle="Value of OOS visit demand."
+          tone="error"
+        />
+        <MDMetricCard
+          title="Total Inventory"
+          value={inventory ? String(inventory.totalUnits || 0) : "—"}
+          subtitle={inventory?.lastInventoryUpdatedAt ? `Last update: ${fmtTs(inventory.lastInventoryUpdatedAt)}` : "Last update: —"}
+        />
+      </div>
 
-                  <Divider />
-                  <BlockStack gap="150">
-                    <InlineStack align="space-between">
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Inventory last update
-                      </Text>
-                      <Text as="p" variant="bodySm">
-                        {fmtTs(freshness?.lastInventoryUpdatedAt)}
-                      </Text>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Webhook last received
-                      </Text>
-                      <Text as="p" variant="bodySm">
-                        {fmtTs(freshness?.lastWebhookReceivedAt)}
-                      </Text>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Products last updated
-                      </Text>
-                      <Text as="p" variant="bodySm">
-                        {fmtTs(freshness?.lastProductsUpdatedAt)}
-                      </Text>
-                    </InlineStack>
-                  </BlockStack>
+      {/* Demand by Variant */}
+      <MDCard elevation={1} padding="lg" style={{ marginBottom: mdTheme.spacing.xl }}>
+        <h2 style={{ fontSize: mdTheme.typography.titleLarge.fontSize, fontWeight: 500, margin: 0, marginBottom: mdTheme.spacing.md }}>
+          Demand by Variant
+        </h2>
+        <div style={{ height: '1px', backgroundColor: mdTheme.colors.outlineVariant, marginBottom: mdTheme.spacing.md }} />
+        {demandRows.length ? (
+          <BarChart rows={demandRows} />
+        ) : (
+          <EmptyState
+            title="No demand captured yet"
+            message="We haven't seen any customers click 'Notify Me' yet. Try keeping some products out of stock to test."
+            icon="📉"
+            actionLabel="Verify on Demo Store"
+            onAction={() => window.open(`${apiBase}/demo`, '_blank')}
+          />
+        )}
+      </MDCard>
 
-                  <Box paddingBlockStart="200">
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Status: {loading ? "Loading…" : installed ? "Ready" : "Action required"}
-                    </Text>
-                  </Box>
-                </BlockStack>
-              </BlockStack>
-            </Card>
-          </InlineGrid>
-        </Layout.Section>
+      {/* Highlighted Products Table */}
+      <MDCard elevation={1} padding="lg" style={{ marginBottom: mdTheme.spacing.xl }}>
+        <h2 style={{ fontSize: mdTheme.typography.titleLarge.fontSize, fontWeight: 500, margin: 0, marginBottom: mdTheme.spacing.md }}>
+          Highlighted Products
+        </h2>
+        <div style={{ height: '1px', backgroundColor: mdTheme.colors.outlineVariant, marginBottom: mdTheme.spacing.md }} />
+        <MDDataTable columns={tableColumns} rows={tableRows} />
+      </MDCard>
 
-        <Layout.Section>
-          <InlineGrid columns={{ xs: 1, sm: 2, lg: 5 }} gap="400">
-            <Card>
-              <BlockStack gap="200">
-                <Text as="p" variant="headingSm" tone="subdued">
-                  ₹ Missed Revenue (Last 7 days)
-                </Text>
-                <Text as="p" variant="heading2xl" fontWeight="bold">
-                  ₹{kpis ? formatRsFromPaise(kpis.missedRevenuePaise) : "—"}
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Revenue-first framing (money lost).
-                </Text>
-              </BlockStack>
-            </Card>
-            <Card>
-              <BlockStack gap="200">
-                <Text as="p" variant="headingSm" tone="subdued">
-                  Top Risk Variant
-                </Text>
-                {kpis?.topRiskVariant ? (
-                  <BlockStack gap="200">
-                    <Text as="p" variant="bodyMd" fontWeight="semibold">
-                      {kpis.topRiskVariant.productTitle} · Size {kpis.topRiskVariant.size}
-                    </Text>
-                    <InlineStack gap="200" blockAlign="center">
-                      <Text as="span" variant="bodyMd">
-                        Demand: {kpis.topRiskVariant.demandCount}
-                      </Text>
-                      <RiskBadge badge={kpis.topRiskVariant.badge} />
-                    </InlineStack>
-                  </BlockStack>
-                ) : (
-                  <Text as="p" tone="subdued">
-                    —
-                  </Text>
-                )}
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Next action: restock plan.
-                </Text>
-              </BlockStack>
-            </Card>
-            <Card>
-              <BlockStack gap="200">
-                <Text as="p" variant="headingSm" tone="subdued">
-                  Customers Waiting
-                </Text>
-                <Text as="p" variant="heading2xl" fontWeight="bold">
-                  {kpis ? kpis.customersWaiting : "—"}
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Will auto-notify on restock.
-                </Text>
-              </BlockStack>
-            </Card>
-            <Card>
-              <BlockStack gap="200">
-                <Text as="p" variant="headingSm" tone="subdued">
-                  Restock Urgency Score
-                </Text>
-                <Text as="p" variant="heading2xl" fontWeight="bold">
-                  {kpis ? `${kpis.restockUrgencyScore} / 10` : "—"}
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Signal over noise.
-                </Text>
-              </BlockStack>
-            </Card>
-            <Card>
-              <BlockStack gap="200">
-                <Text as="p" variant="headingSm" tone="subdued">
-                  Total Inventory
-                </Text>
-                <Text as="p" variant="heading2xl" fontWeight="bold">
-                  {inventory ? String(inventory.totalUnits || 0) : "—"}
-                </Text>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {inventory?.lastInventoryUpdatedAt ? `Last update: ${fmtTs(inventory.lastInventoryUpdatedAt)}` : "Last update: —"}
-                </Text>
-              </BlockStack>
-            </Card>
-          </InlineGrid>
-        </Layout.Section>
-
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">
-                Demand by Variant
-              </Text>
-              <Divider />
-              {demandRows.length ? (
-                <BarChart rows={demandRows} />
-              ) : (
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd">
-                    You haven’t missed revenue yet. That’s good — or we’re not tracking correctly.
-                  </Text>
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    Verify Integration: install the app on a dev store, then generate demand events.
-                  </Text>
-                </BlockStack>
-              )}
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">
-                Highlighted Products
-              </Text>
-              <Divider />
-              <DataTable
-                columnContentTypes={["text", "text", "text", "numeric", "numeric", "numeric", "text", "numeric", "text"]}
-                headings={["Product", "Vendor", "Variant", "Demand", "Missed Revenue", "Available", "Last Inventory", "Suggested Units", ""]}
-                rows={tableRows}
-                truncate
-              />
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-
-        {restockSuggestionsByVendor.length ? (
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">
-                  Restock Suggestions
-                </Text>
-                <Divider />
-                <BlockStack gap="400">
-                  {restockSuggestionsByVendor.map((g) => (
-                    <BlockStack gap="200" key={g.vendor}>
-                      <Text as="h3" variant="headingSm">
-                        {g.vendor}
-                      </Text>
-                      <DataTable
-                        columnContentTypes={["text", "text", "numeric", "numeric", "text"]}
-                        headings={["Product", "Variant", "Demand", "Suggested Units", "Last Inventory"]}
-                        rows={(g.items || []).map((it) => [
-                          <Button
-                            key={`${g.vendor}-${it.productHandle || it.productTitle}-${it.size || ""}`}
-                            url={`${basePath}/products/${encodeURIComponent(it.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
-                            plain
-                          >
-                            {it.productTitle}
-                          </Button>,
-                          it.size ? `Size ${it.size}` : "—",
-                          String(it.demandCount || 0),
-                          String(it.suggestedUnits || 0),
-                          fmtTs(it.lastInventoryUpdatedAt)
-                        ])}
-                        truncate
-                      />
-                    </BlockStack>
-                  ))}
-                </BlockStack>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        ) : null}
-      </Layout>
-    </Page>
+      {/* Restock Suggestions */}
+      {restockSuggestionsByVendor.length > 0 && (
+        <MDCard elevation={1} padding="lg">
+          <h2 style={{ fontSize: mdTheme.typography.titleLarge.fontSize, fontWeight: 500, margin: 0, marginBottom: mdTheme.spacing.md }}>
+            Restock Suggestions
+          </h2>
+          <div style={{ height: '1px', backgroundColor: mdTheme.colors.outlineVariant, marginBottom: mdTheme.spacing.md }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: mdTheme.spacing.xl }}>
+            {restockSuggestionsByVendor.map((g) => (
+              <div key={g.vendor}>
+                <h3 style={{ fontSize: mdTheme.typography.titleMedium.fontSize, fontWeight: 500, margin: 0, marginBottom: mdTheme.spacing.md }}>
+                  {g.vendor}
+                </h3>
+                <MDDataTable
+                  columns={[
+                    { header: "Product", align: "left" },
+                    { header: "Variant", align: "left" },
+                    { header: "Demand", align: "right" },
+                    { header: "Suggested Units", align: "right" },
+                    { header: "Last Inventory", align: "left" }
+                  ]}
+                  rows={(g.items || []).map((it) => [
+                    <MDButton
+                      key={`${g.vendor}-${it.productHandle || it.productTitle}-${it.size || ""}`}
+                      href={`${basePath}/products/${encodeURIComponent(it.productHandle || "")}?shop=${encodeURIComponent(shop)}`}
+                      variant="text"
+                    >
+                      {it.productTitle}
+                    </MDButton>,
+                    it.size ? `Size ${it.size}` : "—",
+                    String(it.demandCount || 0),
+                    String(it.suggestedUnits || 0),
+                    fmtTs(it.lastInventoryUpdatedAt)
+                  ])}
+                />
+              </div>
+            ))}
+          </div>
+        </MDCard>
+      )}
+    </div>
   );
 }

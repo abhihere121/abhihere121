@@ -1,4 +1,4 @@
-# SizeSignal Outreach Kit
+# RESTIQ Outreach Kit
 
 Use these scripts to secure your first 5 beta customers.
 

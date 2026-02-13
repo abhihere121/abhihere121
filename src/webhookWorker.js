@@ -100,6 +100,8 @@ async function processRestockBroadcast({ pool, job, messageService }) {
   const sentTo = [];
   for (const w of waitlist) {
     const body = `Good news! Your size ${size || "?"} in ${productTitle || "this product"} is back in stock.${link ? ` Shop now: ${link}` : ""}`;
+
+    // 1. WhatsApp Notification
     await messageService.sendWhatsApp({
       storeId,
       toNumber: w.whatsapp,
@@ -107,6 +109,20 @@ async function processRestockBroadcast({ pool, job, messageService }) {
       body,
       meta: { variant_db_id: variantDbId, shopify_variant_id: shopifyVariantId }
     });
+
+    // 2. Klaviyo Event (Growth Feature)
+    if (w.email) {
+      await messageService.trackKlaviyoEvent({
+        storeId,
+        email: w.email,
+        eventName: "Restock Alert Sent",
+        properties: {
+          product_title: productTitle,
+          variant_size: size,
+          product_url: link
+        }
+      });
+    }
     sentTo.push(w.whatsapp);
   }
 
@@ -152,7 +168,7 @@ function startWebhookWorker({ pool, messageService, intervalMs }) {
           await markJobFailed({ pool, jobId: job.id, error: err?.message || String(err), backoffSeconds: backoff, maxAttempts: 10 });
         }
       }
-    } catch {}
+    } catch { }
   };
 
   const handle = setInterval(tick, ms);
