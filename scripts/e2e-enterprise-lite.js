@@ -1,7 +1,7 @@
 require("dotenv").config();
 try {
   require("dns").setDefaultResultOrder?.("ipv4first");
-} catch {}
+} catch { }
 
 async function getText(url) {
   const res = await fetch(url);
@@ -29,10 +29,10 @@ function ok(cond, msg) {
 }
 
 async function main() {
-  const base = process.env.SIZESIGNAL_BASE_URL || "http://localhost:3001";
+  const base = process.env.RESTIQ_BASE_URL || "http://localhost:3001";
   const shop = "demo-store.myshopify.com";
 
-  const embed = await getText(`${base}/embed/sizesignal.js?shop=${encodeURIComponent(shop)}`);
+  const embed = await getText(`${base}/embed/restiq.js?shop=${encodeURIComponent(shop)}`);
   ok(embed.status === 200, "embed script served");
   ok(embed.text.includes("event_id"), "embed includes event_id field");
 

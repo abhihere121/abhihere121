@@ -19,7 +19,7 @@ Send this to founders who say "Yes" to the beta.
 7.  **Save**.
 
 ## 📊 Step 2: The Database (Google Sheets)
-1.  Make a copy of our **[SizeSignal Template Sheet]** (You will provide your link here).
+1.  Make a copy of our **[RESTIQ Template Sheet]** (You will provide your link here).
 2.  Share the sheet with `automation@make.com` (or your service account email).
 
 ## 🤖 Step 3: The Brain (Make.com)

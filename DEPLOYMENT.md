@@ -1,4 +1,4 @@
-# Keeping SizeSignal Running (Not Local)
+# Keeping RESTIQ Running (Not Local)
 
 Quick tunnels (trycloudflare.com) are temporary and will stop working when your laptop sleeps/restarts. For a stable always-on setup, deploy the app on a server.
 

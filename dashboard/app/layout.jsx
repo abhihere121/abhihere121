@@ -2,8 +2,8 @@ import { Providers } from "./providers";
 import { AppFrame } from "./ui/AppFrame";
 
 export const metadata = {
-  title: "SizeSignal Dashboard",
-  description: "SizeSignal enterprise dashboard"
+  title: "RESTIQ Dashboard",
+  description: "RESTIQ enterprise dashboard"
 };
 
 export default function RootLayout({ children }) {

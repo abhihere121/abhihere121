@@ -1,12 +1,12 @@
 require("dotenv").config();
 try {
   require("dns").setDefaultResultOrder?.("ipv4first");
-} catch {}
+} catch { }
 
 const fs = require("fs");
 const path = require("path");
 
-const BASE_URL = process.env.SIZESIGNAL_BASE_URL || "http://localhost:3001";
+const BASE_URL = process.env.RESTIQ_BASE_URL || "http://localhost:3001";
 
 function ok(condition, message) {
   if (!condition) {
@@ -78,7 +78,7 @@ async function main() {
 
   const report = await getJson(`${BASE_URL}/report/weekly?brand_name=Demo%20Brand&from=${from}&to=${to}`);
   ok(report.status === 200, "generate weekly report");
-  ok(typeof report.json.message === "string" && report.json.message.includes("SizeSignal Weekly Report"), "weekly report has message");
+  ok(typeof report.json.message === "string" && report.json.message.includes("RESTIQ Weekly Report"), "weekly report has message");
   ok((report.json.total || 0) >= 1499, "weekly report includes missed revenue");
 
   const sendWeekly = await postForm(`${BASE_URL}/report/send-weekly`, {

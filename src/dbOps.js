@@ -56,6 +56,8 @@ async function insertWaitlist({ pool, storeId, variantId, whatsapp, email, subsc
   const query = `
     INSERT INTO waitlist (store_id, variant_id, whatsapp, email, subscribed_at)
     VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (variant_id, whatsapp) WHERE notified_at IS NULL
+    DO UPDATE SET subscribed_at = EXCLUDED.subscribed_at
     RETURNING id
   `;
   const res = await pool.query(query, [storeId, variantId, whatsapp, email, subscribedAt]);

@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: sizesignal
+      POSTGRES_DB: restiq
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d sizesignal"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d restiq" ]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -20,7 +20,7 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/sizesignal
+      DATABASE_URL: postgres://postgres:postgres@db:5432/restiq
       APP_URL: http://localhost:3001
       SHOPIFY_API_KEY: ${SHOPIFY_API_KEY}
       SHOPIFY_API_SECRET: ${SHOPIFY_API_SECRET}

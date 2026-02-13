@@ -59,7 +59,7 @@ export function MDNavigationDrawer({ items = [], children }) {
         <>
             <div style={drawerStyle}>
                 <div style={headerStyle}>
-                    SizeSignal
+                    RESTIQ
                 </div>
                 <nav style={{ padding: `${mdTheme.spacing.md} 0` }}>
                     {items.map((item, idx) => {

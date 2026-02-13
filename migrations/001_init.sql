@@ -2,8 +2,8 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'sizesignal_plan') THEN
-    CREATE TYPE sizesignal_plan AS ENUM ('free', 'growth', 'pro');
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'restiq_plan') THEN
+    CREATE TYPE restiq_plan AS ENUM ('free', 'growth', 'pro');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'demand_event_type') THEN
     CREATE TYPE demand_event_type AS ENUM ('variant_view', 'oos_visit', 'notify_intent', 'bounce', 'restock_broadcast');
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS stores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   shop_domain text NOT NULL UNIQUE,
   access_token_enc text NOT NULL,
-  plan sizesignal_plan NOT NULL DEFAULT 'free',
+  plan restiq_plan NOT NULL DEFAULT 'free',
   installed_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
