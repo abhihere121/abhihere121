@@ -1,9 +1,8 @@
+"use client";
 import { BlockStack, Box, Button, Card, Checkbox, InlineGrid, InlineStack, Layout, Page, Select, Text, TextField } from "@shopify/polaris";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useShop } from "../context/ShopContext";
-
-"use client";
 
 export function WidgetPage() {
   const { shop, setShop } = useShop();

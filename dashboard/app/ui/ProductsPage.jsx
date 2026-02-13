@@ -6,21 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { formatRsFromPaise } from "./format";
 import { useShop } from "../context/ShopContext";
 
-function useLocalStorageState(key, initialValue) {
-  const [value, setValue] = useState(initialValue);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) setValue(raw);
-    } catch { }
-  }, [key]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, value);
-    } catch { }
-  }, [key, value]);
-  return [value, setValue];
-}
+
 
 export function ProductsPage() {
   const { shop, setShop } = useShop();
