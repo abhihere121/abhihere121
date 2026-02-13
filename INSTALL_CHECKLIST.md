@@ -1,4 +1,4 @@
-# SizeSignal - 2 Minute Install Checklist
+# RESTIQ - 2 Minute Install Checklist
 
 Send this to founders who say "Yes" to the beta.
 
@@ -11,7 +11,7 @@ Send this to founders who say "Yes" to the beta.
 
 ## 🚀 Step 1: The Widget (Shopify)
 1.  Go to **Online Store > Themes > Edit Code**.
-2.  Open `Assets` folder -> **Add new asset** -> Upload `size-signal.widget.js` and `size-signal.tracking.js`.
+2.  Open `Assets` folder -> **Add new asset** -> Upload `restiq.widget.js` and `restiq.tracking.js`.
 3.  Open `Snippets` folder -> **Add new snippet** -> Name it `notify-me-widget`.
 4.  Paste the provided Liquid code (`notify_me.liquid`).
 5.  Open your Product template (e.g., `main-product.liquid`).
@@ -30,7 +30,7 @@ Send this to founders who say "Yes" to the beta.
 5.  **Save** and switch **ON**.
 
 ## 🔗 Step 4: Connect
-1.  Go back to Shopify `Assets` -> `size-signal.widget.js`.
+1.  Go back to Shopify `Assets` -> `restiq.widget.js`.
 2.  Paste your **Make Webhook URL** at the top (line 3).
 3.  **Save**.
 

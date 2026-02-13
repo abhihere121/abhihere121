@@ -50,7 +50,7 @@ Use these scripts to secure your first 5 beta customers.
 >
 > Most fashion founders restock based on gut feeling or historical sales. But they completely miss the **invisible demand** — customers who landed on a size, saw "Out of Stock", and left.
 >
-> I’ve built **SizeSignal** to fix this.
+> I’ve built **RESTIQ** to fix this.
 >
 > It’s a simple plugin that tracks these "silent" signals and sends you a weekly WhatsApp report:
 > *   **Missed Revenue** (in ₹ lakhs)
@@ -94,7 +94,7 @@ Use these scripts to secure your first 5 beta customers.
 ## 🛡️ Objection Handling
 
 **"We already use a 'Notify Me' app."**
-> "That's great for customers, but **SizeSignal is for YOU**. Existing apps just collect emails. We analyze traffic + intent to tell you **exactly how many units to restock** and how much money you're leaving on the table."
+> "That's great for customers, but **RESTIQ is for YOU**. Existing apps just collect emails. We analyze traffic + intent to tell you **exactly how many units to restock** and how much money you're leaving on the table."
 
 **"I don't have time."**
 > "It takes literally 5 minutes. I can get on a Zoom and do it with you. Once it's up, you save hours of guessing on inventory planning."

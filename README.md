@@ -115,7 +115,7 @@ https://YOUR_TUNNEL_URL/auth?shop=YOUR_DEV_STORE.myshopify.com
 After install, the app will:
 - Store the token in Postgres (Supabase)
 - Register webhooks: `products/update`, `inventory_levels/update`
-- Create a ScriptTag pointing to: `/embed/sizesignal.js?shop=...`
+- Create a ScriptTag pointing to: `/embed/restiq.js?shop=...`
 
 ## 📂 Project Structure
 
@@ -125,10 +125,10 @@ After install, the app will:
     - `events.jsonl`: All captured events.
     - `waitlist.jsonl`: Opt-in list from notify intents.
     - `messages.jsonl`: Simulated WhatsApp sends (founder + customers).
-- `sizesignal/`: Contains the core source files for production.
+- `restiq/`: Contains the core source files for production.
     - `notify_me.liquid`: The Shopify Liquid snippet for the widget.
-    - `size-signal.widget.js`: Handles widget interaction and form submission.
-    - `size-signal.tracking.js`: Background tracking for visits and bounces.
+    - `restiq.widget.js`: Handles widget interaction and form submission.
+    - `restiq.tracking.js`: Background tracking for visits and bounces.
     - `messageProvider.js`: Message provider abstraction (local provider).
     - `make_scenario.json`: Blueprint to import into Make.com.
     - `*.csv`: Templates for Google Sheets database.
@@ -138,7 +138,7 @@ After install, the app will:
 - Demo: `GET /`
 - Admin: `GET /admin`
 - Webhook ingest: `POST /webhook`
-- Hosted embed script: `GET /embed/sizesignal.js?shop=storename.myshopify.com`
+- Hosted embed script: `GET /embed/restiq.js?shop=storename.myshopify.com`
 - Demand API (production path): `POST /api/demand-event`
 - Weekly report JSON: `GET /report/weekly?brand_name=...&from=YYYY-MM-DD&to=YYYY-MM-DD`
 - Send weekly report (local WhatsApp): `POST /report/send-weekly` (form-url-encoded)
@@ -150,14 +150,14 @@ When you are ready to install this on a real store:
 
 ### Step 1: Backend Setup (Make.com + Google Sheets)
 1.  Create a Google Sheet with 4 tabs: `Events`, `WeeklySummary`, `Restock`, `Waitlist`.
-    - Import the CSV headers from `sizesignal/` into each tab.
+    - Import the CSV headers from `restiq/` into each tab.
 2.  Create a new Scenario in Make.com.
 3.  Add a **Webhooks** module ("Custom Webhook").
 4.  Copy the **Webhook URL**.
-5.  Import `sizesignal/make_scenario.json` to build the rest of the flow (optional, or build manually: Webhook -> Google Sheets "Add Row").
+5.  Import `restiq/make_scenario.json` to build the rest of the flow (optional, or build manually: Webhook -> Google Sheets "Add Row").
 
 ### Step 2: Configure Scripts
-1.  Open `sizesignal/size-signal.widget.js` and `sizesignal/size-signal.tracking.js`.
+1.  Open `restiq/restiq.widget.js` and `restiq/restiq.tracking.js`.
 2.  Replace the `WEBHOOK_URL` constant:
     ```javascript
     // Change this:
@@ -168,17 +168,17 @@ When you are ready to install this on a real store:
 
 ### Step 3: Shopify Install
 1.  Go to **Online Store > Themes > Edit Code**.
-2.  Upload `size-signal.widget.js` and `size-signal.tracking.js` to the **Assets** folder.
+2.  Upload `restiq.widget.js` and `restiq.tracking.js` to the **Assets** folder.
 3.  Create a new Snippet named `notify-me-widget`.
-4.  Paste the code from `sizesignal/notify_me.liquid`.
+4.  Paste the code from `restiq/notify_me.liquid`.
 5.  Include the snippet in your Product template (usually `main-product.liquid` or `product-form.liquid`) where you want the button to appear:
     ```liquid
     {% render 'notify-me-widget', product: product %}
     ```
 6.  Add the script tags to `theme.liquid` before `</body>`:
     ```html
-    <script src="{{ 'size-signal.tracking.js' | asset_url }}" defer></script>
-    <script src="{{ 'size-signal.widget.js' | asset_url }}" defer></script>
+    <script src="{{ 'restiq.tracking.js' | asset_url }}" defer></script>
+    <script src="{{ 'restiq.widget.js' | asset_url }}" defer></script>
     ```
 
 ## ✅ Verification
