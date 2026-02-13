@@ -1,34 +1,19 @@
 "use client";
 
-import { MDCard, MDButton, MDDataTable, mdTheme } from "../material";
+import { MDCard, MDMetricCard, MDButton, MDDataTable, mdTheme } from "../material";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatRsFromPaise } from "./format";
-
-function useLocalStorageState(key, initialValue) {
-  const [value, setValue] = useState(initialValue);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) setValue(raw);
-    } catch { }
-  }, [key]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, value);
-    } catch { }
-  }, [key, value]);
-  return [value, setValue];
-}
+import { useShop } from "../context/ShopContext";
 
 function isoDateDaysAgo(days) {
   return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 }
 
 export function ReportsPage() {
-  const [shop, setShop] = useLocalStorageState("ss_shop", "demo-store.myshopify.com");
-  const [from, setFrom] = useLocalStorageState("ss_report_from", isoDateDaysAgo(7));
-  const [to, setTo] = useLocalStorageState("ss_report_to", new Date().toISOString().slice(0, 10));
+  const { shop, setShop } = useShop();
+  const [from, setFrom] = useState(isoDateDaysAgo(7));
+  const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const apiBase = useMemo(() => (typeof window !== "undefined" ? window.location.origin : ""), []);
@@ -80,7 +65,7 @@ export function ReportsPage() {
   const total = data?.ok ? data.totalMissedRevenuePaise : null;
 
   return (
-    <div style={{ padding: mdTheme.spacing.xl, maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: mdTheme.spacing.xl, width: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: mdTheme.spacing.xl }}>
         <h1 style={{ fontSize: mdTheme.typography.headlineLarge.fontSize, fontWeight: 400, color: mdTheme.colors.onSurface, margin: 0, marginBottom: mdTheme.spacing.xs }}>
           {title}
@@ -101,7 +86,7 @@ export function ReportsPage() {
               style={{
                 width: '100%',
                 padding: '12px',
-                border: `1px solid ${mdTheme.colors.outline}`,
+                border: `1px solid ${mdTheme.colors.outline} `,
                 borderRadius: mdTheme.shape.extraSmall,
                 fontSize: mdTheme.typography.bodyMedium.fontSize,
                 fontFamily: 'Roboto, sans-serif'
@@ -117,7 +102,7 @@ export function ReportsPage() {
               style={{
                 width: '100%',
                 padding: '12px',
-                border: `1px solid ${mdTheme.colors.outline}`,
+                border: `1px solid ${mdTheme.colors.outline} `,
                 borderRadius: mdTheme.shape.extraSmall,
                 fontSize: mdTheme.typography.bodyMedium.fontSize,
                 fontFamily: 'Roboto, sans-serif'
@@ -133,7 +118,7 @@ export function ReportsPage() {
               style={{
                 width: '100%',
                 padding: '12px',
-                border: `1px solid ${mdTheme.colors.outline}`,
+                border: `1px solid ${mdTheme.colors.outline} `,
                 borderRadius: mdTheme.shape.extraSmall,
                 fontSize: mdTheme.typography.bodyMedium.fontSize,
                 fontFamily: 'Roboto, sans-serif'
@@ -148,7 +133,7 @@ export function ReportsPage() {
         </div>
         <div style={{ display: 'flex', gap: mdTheme.spacing.md, alignItems: 'center' }}>
           <span style={{ fontSize: mdTheme.typography.bodyMedium.fontSize }}>
-            Total missed: {total !== null ? `₹${formatRsFromPaise(total)}` : "—"}
+            Total missed: {total !== null ? `₹${formatRsFromPaise(total)} ` : "—"}
           </span>
           {data?.ok ? null : (
             <span style={{ fontSize: mdTheme.typography.bodySmall.fontSize, color: mdTheme.colors.error }}>

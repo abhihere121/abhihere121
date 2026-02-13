@@ -3,25 +3,10 @@
 import { MDCard, MDButton, mdTheme } from "../material";
 import { useEffect, useState } from "react";
 import { WidgetPreview } from "./WidgetPreview";
-
-function useLocalStorageState(key, initialValue) {
-  const [value, setValue] = useState(initialValue);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) setValue(raw);
-    } catch { }
-  }, [key]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, value);
-    } catch { }
-  }, [key, value]);
-  return [value, setValue];
-}
+import { useShop } from "../context/ShopContext";
 
 export function SettingsPage() {
-  const [shop, setShop] = useLocalStorageState("ss_shop", "demo-store.myshopify.com");
+  const { shop, setShop } = useShop();
   const [settings, setSettings] = useState({
     enabled: true,
     primary_color: "#111827",
@@ -66,7 +51,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div style={{ padding: mdTheme.spacing.xl, maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: mdTheme.spacing.xl, width: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: mdTheme.spacing.xl }}>
         <h1 style={{ fontSize: mdTheme.typography.headlineLarge.fontSize, fontWeight: 400, color: mdTheme.colors.onSurface, margin: 0, marginBottom: mdTheme.spacing.xs }}>
           Settings

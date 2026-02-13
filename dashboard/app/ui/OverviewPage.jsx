@@ -14,22 +14,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { clamp, formatRsFromPaise } from "./format";
 import { exportToCSV } from "./export";
+import { useShop } from "../context/ShopContext";
 
-function useLocalStorageState(key, initialValue) {
-  const [value, setValue] = useState(initialValue);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) setValue(raw);
-    } catch { }
-  }, [key]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, value);
-    } catch { }
-  }, [key, value]);
-  return [value, setValue];
-}
+// Shop context is used instead of local component state for shop persistence
 
 function BarChart({ rows }) {
   const max = rows.reduce((m, r) => Math.max(m, r.demandCount), 0) || 1;
@@ -65,7 +52,7 @@ function BarChart({ rows }) {
 }
 
 export function OverviewPage() {
-  const [shop, setShop] = useLocalStorageState("ss_shop", "demo-store.myshopify.com");
+  const { shop, setShop } = useShop();
   const [data, setData] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -200,7 +187,7 @@ export function OverviewPage() {
   };
 
   return (
-    <div style={{ padding: mdTheme.spacing.xl, maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: mdTheme.spacing.xl, width: '100%', boxSizing: 'border-box' }}>
       {/* Page Header */}
       <div style={{ marginBottom: mdTheme.spacing.xl }}>
         <h1 style={{

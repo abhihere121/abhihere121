@@ -1,27 +1,12 @@
-"use client";
-
 import { BlockStack, Box, Button, Card, Checkbox, InlineGrid, InlineStack, Layout, Page, Select, Text, TextField } from "@shopify/polaris";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useShop } from "../context/ShopContext";
 
-function useLocalStorageState(key, initialValue) {
-  const [value, setValue] = useState(initialValue);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) setValue(raw);
-    } catch {}
-  }, [key]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, value);
-    } catch {}
-  }, [key, value]);
-  return [value, setValue];
-}
+"use client";
 
 export function WidgetPage() {
-  const [shop, setShop] = useLocalStorageState("ss_shop", "demo-store.myshopify.com");
+  const { shop, setShop } = useShop();
   const [snippet, setSnippet] = useState(null);
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -99,7 +84,7 @@ export function WidgetPage() {
   };
 
   return (
-    <Page title={title} subtitle="Storefront widget + manual theme installation">
+    <Page fullWidth title={title} subtitle="Storefront widget + manual theme installation">
       <Layout>
         <Layout.Section>
           <Card>
@@ -217,7 +202,7 @@ export function WidgetPage() {
                     onClick={() => {
                       try {
                         navigator.clipboard.writeText(snippet.manualInlineSnippet);
-                      } catch {}
+                      } catch { }
                     }}
                   >
                     Copy snippet

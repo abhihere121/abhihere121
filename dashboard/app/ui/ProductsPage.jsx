@@ -4,6 +4,7 @@ import { MDCard, MDButton, MDDataTable, mdTheme } from "../material";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatRsFromPaise } from "./format";
+import { useShop } from "../context/ShopContext";
 
 function useLocalStorageState(key, initialValue) {
   const [value, setValue] = useState(initialValue);
@@ -22,7 +23,7 @@ function useLocalStorageState(key, initialValue) {
 }
 
 export function ProductsPage() {
-  const [shop, setShop] = useLocalStorageState("ss_shop", "demo-store.myshopify.com");
+  const { shop, setShop } = useShop();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const apiBase = useMemo(() => (typeof window !== "undefined" ? window.location.origin : ""), []);
@@ -89,7 +90,7 @@ export function ProductsPage() {
   ]);
 
   return (
-    <div style={{ padding: mdTheme.spacing.xl, maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: mdTheme.spacing.xl, width: '100%', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: mdTheme.spacing.xl }}>
         <h1 style={{ fontSize: mdTheme.typography.headlineLarge.fontSize, fontWeight: 400, color: mdTheme.colors.onSurface, margin: 0, marginBottom: mdTheme.spacing.xs }}>
           Products

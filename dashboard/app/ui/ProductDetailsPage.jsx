@@ -4,14 +4,20 @@ import { BlockStack, Button, Card, DataTable, Divider, Layout, Page, Text } from
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { formatRsFromPaise } from "./format";
+import { useShop } from "../context/ShopContext";
 
 export function ProductDetailsPage() {
   const params = useParams();
+  const { shop, setShop } = useShop();
   const searchParams = useSearchParams();
   const handle = String(params?.handle || "");
-  const shop = String(searchParams.get("shop") || "");
+  const shopFromUrl = searchParams.get("shop") || "";
   const apiBase = useMemo(() => (typeof window !== "undefined" ? window.location.origin : ""), []);
   const basePath = "/app";
+
+  useEffect(() => {
+    if (shopFromUrl && shopFromUrl !== shop) setShop(shopFromUrl);
+  }, [shopFromUrl, shop, setShop]);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -88,6 +94,7 @@ export function ProductDetailsPage() {
 
   return (
     <Page
+      fullWidth
       title={title}
       subtitle={subtitle}
       backAction={{ content: "Back", url: `${basePath}${shop ? `?shop=${encodeURIComponent(shop)}` : ""}` }}

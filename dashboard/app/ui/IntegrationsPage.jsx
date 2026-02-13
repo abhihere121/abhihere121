@@ -41,8 +41,9 @@ export function IntegrationsPage() {
 
     const containerStyle = {
         padding: "32px",
-        maxWidth: "1000px",
-        margin: "0 auto",
+        width: "100%",
+        boxSizing: "border-box",
+        margin: "0",
         display: "flex",
         flexDirection: "column",
         gap: "32px"
