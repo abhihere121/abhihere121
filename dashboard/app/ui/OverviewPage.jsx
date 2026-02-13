@@ -13,6 +13,7 @@ import { EmptyState } from "./EmptyState";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { clamp, formatRsFromPaise } from "./format";
+import { exportToCSV } from "./export";
 
 function useLocalStorageState(key, initialValue) {
   const [value, setValue] = useState(initialValue);
@@ -300,9 +301,19 @@ export function OverviewPage() {
 
       {/* Demand by Variant */}
       <MDCard elevation={1} padding="lg" style={{ marginBottom: mdTheme.spacing.xl }}>
-        <h2 style={{ fontSize: mdTheme.typography.titleLarge.fontSize, fontWeight: 500, margin: 0, marginBottom: mdTheme.spacing.md }}>
-          Demand by Variant
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: mdTheme.spacing.md }}>
+          <h2 style={{ fontSize: mdTheme.typography.titleLarge.fontSize, fontWeight: 500, margin: 0 }}>
+            Demand by Variant
+          </h2>
+          <MDButton
+            variant="text"
+            size="small"
+            onClick={() => exportToCSV(`restiq-demand-${shop}-${new Date().toISOString().split('T')[0]}.csv`, demandRows)}
+            disabled={!demandRows.length}
+          >
+            Export CSV
+          </MDButton>
+        </div>
         <div style={{ height: '1px', backgroundColor: mdTheme.colors.outlineVariant, marginBottom: mdTheme.spacing.md }} />
         {demandRows.length ? (
           <BarChart rows={demandRows} />

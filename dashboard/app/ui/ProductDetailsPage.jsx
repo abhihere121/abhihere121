@@ -49,6 +49,22 @@ export function ProductDetailsPage() {
   const product = data?.ok ? data.product : null;
   const variants = data?.ok ? data.variants || [] : [];
 
+  const triggerNotify = async (variantId) => {
+    if (!window.confirm("Send notifications to the entire waitlist for this variant?")) return;
+    try {
+      const res = await fetch(`${apiBase}/api/restock/manual-trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shop, variantId })
+      });
+      const json = await res.json();
+      if (json.ok) alert("Notifications enqueued successfully!");
+      else alert("Error: " + json.error);
+    } catch (e) {
+      alert("Failed to trigger: " + e.message);
+    }
+  };
+
   const rows = variants.map((v) => [
     v.size ? `Size ${v.size}` : "—",
     v.sku || "—",
@@ -57,7 +73,14 @@ export function ProductDetailsPage() {
     fmtTs(v.lastInventoryUpdatedAt),
     String(v.demandCount || 0),
     `₹${formatRsFromPaise(v.missedRevenuePaise || 0)}`,
-    String(v.waitingCount || 0)
+    <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <span>{String(v.waitingCount || 0)}</span>
+      {v.waitingCount > 0 && (
+        <Button size="micro" onClick={() => triggerNotify(v.db_id || v.id)} variant="primary">
+          Notify All
+        </Button>
+      )}
+    </div>
   ]);
 
   const title = product?.title ? `Product — ${product.title}` : "Product";

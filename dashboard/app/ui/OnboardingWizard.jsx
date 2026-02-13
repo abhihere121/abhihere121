@@ -17,7 +17,8 @@ export function OnboardingWizard({ shop, onComplete }) {
     const [widgetSettings, setWidgetSettings] = useState({
         primary_color: "#3B82F6", // Sapphire Blue for default button
         button_text: "Notify Me",
-        heading_text: "Get restock alerts"
+        heading_text: "Get restock alerts",
+        success_message: "You're on the list! We'll notify you."
     });
 
     useEffect(() => {
@@ -176,6 +177,28 @@ export function OnboardingWizard({ shop, onComplete }) {
                                             value={widgetSettings.button_text}
                                             onChange={e => setWidgetSettings(s => ({ ...s, button_text: e.target.value }))}
                                             placeholder="e.g. Notify Me"
+                                            style={{ height: "42px", padding: "8px 12px", border: `1px solid ${mdTheme.colors.outlineVariant}`, borderRadius: "8px", fontSize: "14px" }}
+                                        />
+                                    </div>
+
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                        <label style={{ fontSize: "12px", fontWeight: "600", color: mdTheme.colors.onSurfaceVariant }}>HEADING TEXT</label>
+                                        <input
+                                            type="text"
+                                            value={widgetSettings.heading_text}
+                                            onChange={e => setWidgetSettings(s => ({ ...s, heading_text: e.target.value }))}
+                                            placeholder="e.g. Get restock alerts"
+                                            style={{ height: "42px", padding: "8px 12px", border: `1px solid ${mdTheme.colors.outlineVariant}`, borderRadius: "8px", fontSize: "14px" }}
+                                        />
+                                    </div>
+
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                        <label style={{ fontSize: "12px", fontWeight: "600", color: mdTheme.colors.onSurfaceVariant }}>SUCCESS MESSAGE</label>
+                                        <input
+                                            type="text"
+                                            value={widgetSettings.success_message}
+                                            onChange={e => setWidgetSettings(s => ({ ...s, success_message: e.target.value }))}
+                                            placeholder="e.g. You're on the list!"
                                             style={{ height: "42px", padding: "8px 12px", border: `1px solid ${mdTheme.colors.outlineVariant}`, borderRadius: "8px", fontSize: "14px" }}
                                         />
                                     </div>

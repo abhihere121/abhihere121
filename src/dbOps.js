@@ -82,11 +82,14 @@ async function upsertWidgetSettings({ pool, storeId, enabled, primary_color, but
   return res.rows[0];
 }
 
-async function listWaitlistForVariant({ pool, storeId, variantDbId }) {
-  const res = await pool.query(
-    "SELECT * FROM waitlist WHERE store_id = $1 AND variant_id = $2 AND notified_at IS NULL",
-    [storeId, variantDbId]
-  );
+async function listWaitlistForVariant({ pool, storeId, variantDbId, limit }) {
+  const query = `
+    SELECT * FROM waitlist 
+    WHERE store_id = $1 AND variant_id = $2 AND notified_at IS NULL
+    ORDER BY subscribed_at ASC
+    ${limit ? `LIMIT ${Number(limit)}` : ""}
+  `;
+  const res = await pool.query(query, [storeId, variantDbId]);
   return res.rows;
 }
 

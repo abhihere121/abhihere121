@@ -84,9 +84,14 @@ async function processRestockBroadcast({ pool, job, messageService }) {
   if (!storeId) return;
 
   const variantDbId = payload.variant_db_id;
-  if (!variantDbId) return;
-
-  const waitlist = await dbOps.listWaitlistForVariant({ pool, storeId, variantDbId });
+  // 1. Fetch waitlisted customers (Smart Batching: only notify as many as we restocked)
+  const restockQuantity = job.available_quantity ? Number(job.available_quantity) : null;
+  const waitlist = await dbOps.listWaitlistForVariant({
+    pool,
+    storeId,
+    variantDbId,
+    limit: restockQuantity
+  });
   if (waitlist.length === 0) return;
 
   const shopDomain = job.shop_domain || "";

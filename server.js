@@ -426,6 +426,23 @@ async function start() {
 
   // Redirects
   app.get("/", (req, res) => res.redirect("/demo"));
+  app.post("/api/restock/manual-trigger", async (req, res) => {
+    const { shop, variantId } = req.body;
+    if (!shop || !variantId) return res.status(400).json({ ok: false, error: "Missing shop or variantId" });
+
+    const store = await dbOps.getStoreByShop({ pool, shopDomain: shop });
+    if (!store) return res.status(404).json({ ok: false, error: "Store not found" });
+
+    await enqueueWebhookJob({
+      pool,
+      storeId: store.id,
+      topic: "restock/broadcast",
+      shopDomain: shop,
+      payload: { variant_db_id: variantId }
+    });
+
+    res.json({ ok: true, message: "Manual restock broadcast enqueued." });
+  });
   app.get("/admin", (req, res) => res.redirect("/app")); // Legacy
 
   // Demo Page
